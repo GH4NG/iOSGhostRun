@@ -1,0 +1,24 @@
+{
+    "name": "iosghostrun-frontend",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vue-tsc && vite build",
+        "preview": "vite preview",
+        "typecheck": "vue-tsc --noEmit"
+    },
+    "dependencies": {
+        "leaflet": "^1.9.4",
+        "vue": "^3.4.0"
+    },
+    "devDependencies": {
+        "@types/leaflet": "^1.9.21",
+        "@types/node": "^20.19.27",
+        "@vitejs/plugin-vue": "^5.0.0",
+        "typescript": "^5.9.3",
+        "vite": "^5.0.0",
+        "vue-tsc": "^2.2.12"
+    }
+}

@@ -1,0 +1,151 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - 'v*'
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: 'Release tag'
+                required: true
+                type: string
+
+permissions:
+    contents: write
+
+jobs:
+    build:
+        name: Build ${{ matrix.platform }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: windows-latest
+                      platform: windows/amd64
+                      artifact: iOSGhostRun-windows-amd64.exe
+                    - os: windows-latest
+                      platform: windows/arm64
+                      artifact: iOSGhostRun-windows-arm64.exe
+                    - os: macos-latest
+                      platform: darwin/universal
+                      artifact: iOSGhostRun-macos-universal.zip
+                    - os: ubuntu-latest
+                      platform: linux/amd64
+                      artifact: iOSGhostRun-linux-amd64
+                    # - os: ubuntu-latest
+                    #   platform: linux/arm64
+                    #   artifact: iOSGhostRun-linux-arm64
+
+        runs-on: ${{ matrix.os }}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: '1.23'
+                  cache: true
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Install Wails
+              run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+            - name: Install Linux dependencies
+              if: matrix.os == 'ubuntu-latest'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get -yq install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu
+
+            - name: Install frontend dependencies
+              working-directory: frontend
+              run: npm install
+
+            - name: Build
+              run: |
+                  if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+                    wails build -clean -platform ${{ matrix.platform }} -tags webkit2_41
+                  else
+                    wails build -clean -platform ${{ matrix.platform }}
+                  fi
+              shell: bash
+
+            - name: Package macOS app
+              if: matrix.os == 'macos-latest'
+              run: |
+                  cd build/bin
+                  zip -r ../../${{ matrix.artifact }} iOSGhostRun.app
+
+            - name: Rename Windows artifact
+              if: matrix.os == 'windows-latest'
+              run: |
+                  Copy-Item "build/bin/iOSGhostRun.exe" "${{ matrix.artifact }}"
+
+            - name: Rename Linux artifact
+              if: matrix.os == 'ubuntu-latest'
+              run: |
+                  cp build/bin/iOSGhostRun ${{ matrix.artifact }}
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.artifact }}
+                  path: ${{ matrix.artifact }}
+
+    release:
+        needs: build
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: artifacts
+
+            - name: Prepare release files
+              run: |
+                  mkdir -p release
+                  find artifacts -type f -exec mv {} release/ \;
+                  ls -la release/
+
+            - name: Get tag name
+              id: tag
+              run: |
+                  if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+                    echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+                  else
+                    echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ steps.tag.outputs.tag }}
+                  name: Release ${{ steps.tag.outputs.tag }}
+                  draft: false
+                  prerelease: false
+                  files: release/*
+                  body: |
+                      ## iOSGhostRun ${{ steps.tag.outputs.tag }}
+
+                      ### 下载
+                      - **Windows**: `iOSGhostRun-windows-amd64.exe`
+                      - **Windows (ARM64)**: `iOSGhostRun-windows-arm64.exe`
+                      - **macOS**: `iOSGhostRun-macos-universal.zip` (支持 Intel 和 Apple Silicon)
+                      - **Linux**: `iOSGhostRun-linux-amd64`
+                      - **Linux (ARM64)**: `iOSGhostRun-linux-arm64`
+
+                      ### 使用说明
+                      1. Windows: 直接运行 exe 文件
+                      2. macOS: 解压 zip 后将 app 拖入应用程序文件夹
+                      3. Linux: 添加执行权限后运行 `chmod +x iOSGhostRun-linux-${arch} && ./iOSGhostRun-linux-${arch}`
+
+                      ### 注意事项
+                      - iOS 17+ 设备需要先以管理员权限运行 `ios tunnel start`
+                      - 首次连接设备时会自动下载并挂载开发者镜像
