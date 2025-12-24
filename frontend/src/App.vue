@@ -39,6 +39,39 @@
                         </div>
                     </div>
 
+                    <!-- Tunnel 服务状态 -->
+                    <div class="card" v-if="selectedDevice && isIOS17Device">
+                        <div class="card-title">
+                            <span>Tunnel 服务</span>
+                            <span :class="[
+                                'status-dot',
+                                tunnelRunning ? 'running' : 'idle',
+                            ]"></span>
+                        </div>
+                        <div class="tunnel-info">
+                            <p style="
+                                    margin-bottom: 12px;
+                                    font-size: 12px;
+                                    color: #666;
+                                ">
+                                {{
+                                    tunnelRunning
+                                        ? '✓ Tunnel 服务运行中'
+                                        : '✗ Tunnel 服务未启动'
+                                }}
+                            </p>
+                            <button v-if="!tunnelRunning" class="btn btn-primary" @click="startTunnel"
+                                :disabled="startingTunnel">
+                                {{
+                                    startingTunnel ? '启动中...' : '启动 Tunnel'
+                                }}
+                            </button>
+                            <button v-else class="btn btn-secondary" disabled>
+                                服务已启动
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- 运行状态 -->
                     <div class="card" v-if="selectedDevice">
                         <div class="card-title">
@@ -292,6 +325,9 @@ const go = window.go
 const devices = ref<Device[]>([])
 const selectedDevice = ref<string | null>(null)
 const loading = ref(false)
+const isIOS17Device = ref(false)
+const tunnelRunning = ref(false)
+const startingTunnel = ref(false)
 
 const config = reactive<RunConfig>({
     speed: 8.0,
@@ -506,12 +542,16 @@ async function selectDevice(udid: string) {
 
             // 检查是否是 iOS 17+ 设备
             const isIOS17 = await go.device.Manager.IsIOS17OrAbove()
+            isIOS17Device.value = isIOS17
+
             if (isIOS17) {
                 const tunnelStatus = await go.device.Manager.CheckTunnelStatus()
+                tunnelRunning.value = tunnelStatus.running
+
                 if (!tunnelStatus.running) {
                     showToast(
-                        'iOS 17+ 设备需要先运行 tunnel 服务！请以管理员权限运行: ios tunnel start',
-                        'error'
+                        'iOS 17+ 设备检测到！Tunnel 服务未启动，请点击下方"启动 Tunnel"按钮启动服务',
+                        'warning'
                     )
                     return
                 }
@@ -521,6 +561,32 @@ async function selectDevice(udid: string) {
         }
     } catch (error) {
         showToast('选择设备失败: ' + error, 'error')
+    }
+}
+
+// 启动 Tunnel 服务
+async function startTunnel() {
+    try {
+        startingTunnel.value = true
+        showToast('正在启动 Tunnel 服务...', 'info')
+
+        if (go?.device?.Manager) {
+            const result = await go.device.Manager.StartTunnel()
+
+            if (result.success) {
+                tunnelRunning.value = true
+                showToast(result.message, 'success')
+
+                // 启动成功后，继续挂载开发者镜像
+                await checkAndMountDeveloperImage()
+            } else {
+                showToast(`启动 Tunnel 失败: ${result.message}`, 'error')
+            }
+        }
+    } catch (error) {
+        showToast('启动 Tunnel 异常: ' + error, 'error')
+    } finally {
+        startingTunnel.value = false
     }
 }
 

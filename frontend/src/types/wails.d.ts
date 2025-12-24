@@ -5,6 +5,7 @@ import type {
     Coordinate,
     LogEntry,
     TunnelStatus,
+    TunnelResult,
     DeveloperImageStatus,
     RouteStats
 } from './index'
@@ -19,6 +20,7 @@ declare global {
                     SelectDevice(udid: string): Promise<void>
                     IsIOS17OrAbove(): Promise<boolean>
                     CheckTunnelStatus(): Promise<TunnelStatus>
+                    StartTunnel(): Promise<TunnelResult>
                     GetDeveloperImageStatus(): Promise<DeveloperImageStatus>
                     MountDeveloperImage(): Promise<void>
                     SetSimLocation(lat: number, lon: number): Promise<void>

@@ -61,7 +61,14 @@ export interface Toast {
 // Tunnel 状态
 export interface TunnelStatus {
     running: boolean
-    count?: number
+    tunnelCount?: number
+}
+
+// Tunnel 操作结果
+export interface TunnelResult {
+    success: boolean
+    message: string
+    alreadyRunning?: boolean
 }
 
 // 开发者镜像状态

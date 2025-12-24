@@ -1,6 +1,7 @@
 package device
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -411,4 +412,60 @@ func (m *Manager) IsIOS17OrAbove() bool {
 	}
 
 	return m.deviceEntry.SupportsRsd()
+}
+
+// StartTunnel 启动 tunnel 服务（iOS 17+ 设备）
+func (m *Manager) StartTunnel() map[string]interface{} {
+	result := map[string]interface{}{
+		"success": false,
+		"message": "",
+	}
+
+	// 检查是否已运行
+	if tunnel.IsAgentRunning() {
+		m.log.Info("设备管理", "Tunnel 服务已在运行")
+		result["success"] = true
+		result["message"] = "Tunnel 服务已在运行"
+		result["alreadyRunning"] = true
+		return result
+	}
+
+	m.mu.RLock()
+	deviceEntry := m.deviceEntry
+	m.mu.RUnlock()
+
+	if deviceEntry == nil {
+		result["message"] = "未选择设备"
+		return result
+	}
+
+	m.log.Info("设备管理", "正在启动 Tunnel 服务...")
+
+	// 创建配对记录管理器
+	pm, err := tunnel.NewPairRecordManager(".")
+	if err != nil {
+		m.log.Error("设备管理", "创建配对管理器失败: %v", err)
+		result["message"] = fmt.Sprintf("创建配对管理器失败: %v", err)
+		return result
+	}
+
+	// 为当前设备启动 tunnel
+	// 注意：这是高级 API，会自动处理配对和连接
+	tunnelInfo, err := tunnel.ManualPairAndConnectToTunnel(m.getContext(), *deviceEntry, pm)
+	if err != nil {
+		m.log.Error("设备管理", "启动 Tunnel 失败: %v", err)
+		result["message"] = fmt.Sprintf("启动 Tunnel 失败: %v", err)
+		return result
+	}
+
+	m.log.Info("设备管理", "Tunnel 服务启动成功! 地址: %s, RSD 端口: %d", tunnelInfo.Address, tunnelInfo.RsdPort)
+	result["success"] = true
+	result["message"] = fmt.Sprintf("Tunnel 服务已启动 (%s:%d)", tunnelInfo.Address, tunnelInfo.RsdPort)
+	return result
+}
+
+// getContext 获取上下文
+func (m *Manager) getContext() context.Context {
+	// 返回一个不会被取消的背景上下文
+	return context.Background()
 }
