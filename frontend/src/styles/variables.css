@@ -1,0 +1,55 @@
+/* 全局 CSS 变量 - 现代桌面 App 风格 */
+:root {
+  /* 背景色 */
+  --bg-main: #f5f7fa;
+  --bg-panel: #ffffff;
+  --bg-sidebar: #1a1a2e;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card-hover: rgba(255, 255, 255, 0.1);
+  --bg-input: rgba(255, 255, 255, 0.08);
+
+  /* 主题色 */
+  --primary: #4a9eff;
+  --primary-hover: #3b8fee;
+  --success: #52c41a;
+  --warning: #faad14;
+  --danger: #ff4d4f;
+
+  /* 文字颜色 */
+  --text-main: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #9ca3af;
+  --text-sidebar: #e5e7eb;
+  --text-sidebar-secondary: rgba(255, 255, 255, 0.6);
+
+  /* 边框 */
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-light: #e5e7eb;
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  /* 阴影 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+
+  /* 动画 */
+  --transition-fast: 0.15s ease;
+  --transition: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* 尺寸 */
+  --sidebar-width: 320px;
+  --status-bar-height: 36px;
+}
+
+/* 深色主题（可选） */
+[data-theme="dark"] {
+  --bg-main: #0f172a;
+  --bg-panel: #1e293b;
+  --text-main: #f1f5f9;
+  --text-secondary: #94a3b8;
+}

@@ -221,12 +221,6 @@ func (s *Service) Stop() error {
 	}
 	s.status = StatusIdle
 
-	// 重置位置
-	if s.deviceManager.HasSelectedDevice() {
-		s.deviceManager.ResetSimLocation()
-		s.log.Info("跑步服务", "设备位置已重置")
-	}
-
 	s.log.Info("跑步服务", "跑步已停止，总距离: %.0fm", s.stats.TotalDistance)
 	return nil
 }
@@ -237,7 +231,7 @@ func (s *Service) ResetLocation() error {
 		return fmt.Errorf("请先选择设备")
 	}
 
-	err := s.deviceManager.ResetSimLocation()
+	err := s.deviceManager.ResetLocation()
 	if err != nil {
 		s.log.Error("跑步服务", "重置位置失败: %v", err)
 		return err
@@ -253,7 +247,7 @@ func (s *Service) SetSingleLocation(lat, lon float64) error {
 		return fmt.Errorf("请先选择设备")
 	}
 
-	return s.deviceManager.SetSimLocation(lat, lon)
+	return s.deviceManager.SetLocation(lat, lon)
 }
 
 // runLoop 运行循环
@@ -400,7 +394,7 @@ func (s *Service) runLoop() {
 			lastPos = currentPoint
 
 			// 设置位置
-			err := s.deviceManager.SetSimLocation(currentPoint.Latitude, currentPoint.Longitude)
+			err := s.deviceManager.SetLocation(currentPoint.Latitude, currentPoint.Longitude)
 			if err != nil {
 				s.log.Error("跑步服务", "设置位置失败: %v", err)
 				s.emitEvent("run:error", err.Error())

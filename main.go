@@ -38,9 +38,13 @@ func main() {
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup: func(ctx context.Context) {
 			logService.Startup(ctx)
+			deviceManager.Startup(ctx)
 			runnerService.Startup(ctx)
 		},
-		OnShutdown: runnerService.Shutdown,
+		OnShutdown: func(ctx context.Context) {
+			deviceManager.StopTunnel()
+			runnerService.Shutdown(ctx)
+		},
 		Bind: []interface{}{
 			logService,
 			deviceManager,

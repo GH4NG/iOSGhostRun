@@ -3,6 +3,7 @@ package runner
 import (
 	"encoding/json"
 	"fmt"
+	"iOSGhostRun/internal/storage"
 	"os"
 	"path/filepath"
 )
@@ -15,8 +16,8 @@ type ConfigStorage struct {
 // NewConfigStorage 创建配置存储
 func NewConfigStorage() *ConfigStorage {
 
-	storagePath := filepath.Join("data", "config.json")
-	os.MkdirAll(filepath.Dir(storagePath), 0755)
+	baseDir := storage.ResolveAppDir("data")
+	storagePath := filepath.Join(baseDir, "config.json")
 
 	return &ConfigStorage{
 		storagePath: storagePath,

@@ -1,5 +1,6 @@
 // 设备信息
 export interface Device {
+    supportsRsd: any
     udid: string
     name: string
     productType: string

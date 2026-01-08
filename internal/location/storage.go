@@ -3,6 +3,7 @@ package location
 import (
 	"encoding/json"
 	"fmt"
+	"iOSGhostRun/internal/storage"
 	"os"
 	"path/filepath"
 )
@@ -15,9 +16,8 @@ type RouteStorage struct {
 // NewRouteStorage 创建路线存储
 func NewRouteStorage() *RouteStorage {
 
-	storagePath := filepath.Join("data", "routes.json")
-
-	os.MkdirAll(filepath.Dir(storagePath), 0755)
+	baseDir := storage.ResolveAppDir("data")
+	storagePath := filepath.Join(baseDir, "routes.json")
 
 	return &RouteStorage{
 		storagePath: storagePath,

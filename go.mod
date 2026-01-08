@@ -3,12 +3,12 @@ module iOSGhostRun
 go 1.22.0
 
 require (
+	github.com/Masterminds/semver v1.5.0
 	github.com/danielpaulus/go-ios v1.0.192
 	github.com/wailsapp/wails/v2 v2.11.0
 )
 
 require (
-	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect

@@ -4,10 +4,9 @@
     "version": "1.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vue-tsc && vite build",
-        "preview": "vite preview",
-        "typecheck": "vue-tsc --noEmit"
+        "dev": "bunx --bun vite",
+        "build": "bunx --bun vite build",
+        "preview": "bunx --bun vite preview"
     },
     "dependencies": {
         "leaflet": "^1.9.4",
@@ -17,8 +16,6 @@
         "@types/leaflet": "^1.9.21",
         "@types/node": "^20.19.27",
         "@vitejs/plugin-vue": "^5.0.0",
-        "typescript": "^5.9.3",
-        "vite": "^5.0.0",
-        "vue-tsc": "^2.2.12"
+        "vite": "^5.0.0"
     }
 }
