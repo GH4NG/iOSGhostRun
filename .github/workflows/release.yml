@@ -16,94 +16,79 @@ permissions:
 
 jobs:
     build:
-        name: Build ${{ matrix.platform }}
+        name: Build ${{ matrix.name }}
         strategy:
             fail-fast: false
             matrix:
                 include:
+                    # Linux build
+                    - os: ubuntu-24.04
+                      platform: linux
+                      name: Linux_X64
+
+                    # Linux arm build
+                    - os: ubuntu-24.04-arm
+                      platform: linux
+                      name: Linux_ARM
+
+                    # Windows build
                     - os: windows-latest
-                      platform: windows/amd64
-                      artifact: iOSGhostRun-windows-amd64.exe
-                    - os: windows-latest
-                      platform: windows/arm64
-                      artifact: iOSGhostRun-windows-arm64.exe
+                      platform: windows
+                      name: Windows
+
+                    # macOS build
                     - os: macos-latest
-                      platform: darwin/universal
-                      artifact: iOSGhostRun-macos-universal.zip
-                    - os: ubuntu-latest
-                      platform: linux/amd64
-                      artifact: iOSGhostRun-linux-amd64
-                    # - os: ubuntu-latest
-                    #   platform: linux/arm64
-                    #   artifact: iOSGhostRun-linux-arm64
+                      platform: darwin
+                      name: macOS
 
         runs-on: ${{ matrix.os }}
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
-            - name: Setup Go
+            - name: Set up Go
               uses: actions/setup-go@v5
               with:
-                  go-version: '1.23'
-                  cache: true
+                  go-version: 'stable' # Latest stable version
 
-            - name: Setup Bun
+            - name: Set up Bun
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: latest
+                  bun-version: 'latest'
 
-            - name: Install Wails
-              run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
-            - name: Install Linux dependencies
-              if: matrix.os == 'ubuntu-latest'
+            - name: Install Dependencies
+              if: ${{ matrix.platform == 'linux' }}
               run: |
-                  sudo apt-get update
-                  sudo apt-get -yq install libgtk-3-0 libwebkit2gtk-4.1-dev gcc-aarch64-linux-gnu
+                  sudo apt update
+                  sudo apt-get install -y build-essential pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev
 
-            - name: Install frontend dependencies
-              working-directory: frontend
-              run: bun install
+            - name: Install Wails CLI
+              run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+
+            - name: Install Task
+              uses: arduino/setup-task@v2
+              with:
+                  repo-token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build
-              run: |
-                  if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-                    wails build -clean -platform ${{ matrix.platform }} -tags webkit2_41
-                  else
-                    wails build -clean -platform ${{ matrix.platform }}
-                  fi
-              shell: bash
+              run: wails3 package
 
-            - name: Package macOS app
-              if: matrix.os == 'macos-latest'
-              run: |
-                  cd build/bin
-                  zip -r ../../${{ matrix.artifact }} iOSGhostRun.app
-
-            - name: Rename Windows artifact
-              if: matrix.os == 'windows-latest'
-              run: |
-                  Copy-Item "build/bin/iOSGhostRun.exe" "${{ matrix.artifact }}"
-
-            - name: Rename Linux artifact
-              if: matrix.os == 'ubuntu-latest'
-              run: |
-                  cp build/bin/iOSGhostRun ${{ matrix.artifact }}
-
-            - name: Upload artifact
+            - name: Upload Artifact
               uses: actions/upload-artifact@v4
               with:
-                  name: ${{ matrix.artifact }}
-                  path: ${{ matrix.artifact }}
+                  name: app-${{ matrix.name }}
+                  path: |
+                      bin/*.AppImage
+                      bin/*.exe
+                      bin/*.zip
 
     release:
         needs: build
         runs-on: ubuntu-latest
 
         steps:
-            - name: Download all artifacts
+            - name: Download artifacts
               uses: actions/download-artifact@v4
               with:
                   path: artifacts
@@ -133,19 +118,3 @@ jobs:
                   files: release/*
                   body: |
                       ## iOSGhostRun ${{ steps.tag.outputs.tag }}
-
-                      ### 下载
-                      - **Windows**: `iOSGhostRun-windows-amd64.exe`
-                      - **Windows (ARM64)**: `iOSGhostRun-windows-arm64.exe`
-                      - **macOS**: `iOSGhostRun-macos-universal.zip` (支持 Intel 和 Apple Silicon)
-                      - **Linux**: `iOSGhostRun-linux-amd64`
-                      - **Linux (ARM64)**: `iOSGhostRun-linux-arm64`
-
-                      ### 使用说明
-                      1. Windows: 直接运行 exe 文件
-                      2. macOS: 解压 zip 后将 app 拖入应用程序文件夹
-                      3. Linux: 添加执行权限后运行 `chmod +x iOSGhostRun-linux-${arch} && ./iOSGhostRun-linux-${arch}`
-
-                      ### 注意事项
-                      - iOS 17+ 设备需要先以管理员权限运行 `ios tunnel start`
-                      - 首次连接设备时会自动下载并挂载开发者镜像

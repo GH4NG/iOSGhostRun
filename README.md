@@ -4,11 +4,11 @@
 
 ## 功能特性
 
--   **虚拟跑步模拟**: 模拟真实跑步轨迹，支持设置跑步速度
--   **随机化支持**: 支持速度随机波动和路线随机偏移，模拟真实跑步
--   **路线规划**: 支持在地图上手动绘制路线，自动保存上次路线
--   **设备管理**: 自动检测并连接 iOS 设备
--   **跨平台**: 支持 Windows、macOS、Linux
+- **虚拟跑步模拟**: 模拟真实跑步轨迹，支持设置跑步速度
+- **随机化支持**: 支持速度随机波动和路线随机偏移，模拟真实跑步
+- **路线规划**: 支持在地图上手动绘制路线，自动保存上次路线
+- **设备管理**: 自动检测并连接 iOS 设备
+- **跨平台**: 支持 Windows、macOS、Linux
 
 ## 截图
 
@@ -26,15 +26,15 @@
 
 ### 环境要求
 
--   [Golang](https://go.dev)
--   [bun](https://bun.com)
--   [Wails](https://wails.io)
+- [Golang](https://go.dev)
+- [bun](https://bun.com)
+- [Wails](https://wails.io)
 
 ### 快速开始
 
 ```bash
 # 安装依赖
-go install github.com/wailsapp/wails/v2/cmd/wails@latest
+go install github.com/wailsapp/wails/v3/cmd/wails@latest
 cd frontend && bun install && cd ..
 go mod tidy
 

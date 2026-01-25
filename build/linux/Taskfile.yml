@@ -1,0 +1,71 @@
+version: '3'
+
+includes:
+    common: ../Taskfile.yml
+
+tasks:
+    build:
+        summary: Builds the application for Linux
+        deps:
+            - task: common:go:mod:tidy
+            - task: common:build:frontend
+              vars:
+                  BUILD_FLAGS:
+                      ref: .BUILD_FLAGS
+                  DEV:
+                      ref: .DEV
+            - task: common:generate:icons
+            - task: generate:dotdesktop
+        cmds:
+            - go build {{.BUILD_FLAGS}} -o {{.OUTPUT}}
+        vars:
+            BUILD_FLAGS: '{{if eq .DEV "true"}}-buildvcs=false -gcflags=all="-l"{{else}}-tags production -trimpath -buildvcs=false -ldflags="-w -s"{{end}}'
+            ARCH: '{{.ARCH | default ARCH}}'
+            DEFAULT_OUTPUT: '{{.BIN_DIR}}/{{.APP_NAME}}'
+            OUTPUT: '{{ .OUTPUT | default .DEFAULT_OUTPUT }}'
+        env:
+            GOOS: linux
+            CGO_ENABLED: 1
+            GOARCH: '{{.ARCH | default ARCH}}'
+
+    package:
+        summary: Packages the application for Linux
+        cmds:
+            - task: create:appimage
+
+    create:appimage:
+        summary: Creates an AppImage
+        dir: build/linux/appimage
+        deps:
+            - task: build
+              vars:
+                  ARCH: '{{.ARCH | default ARCH}}'
+            - task: generate:dotdesktop
+        cmds:
+            - cp "{{.APP_BINARY}}" "{{.APP_NAME}}"
+            - cp ../../appicon.png "{{.APP_NAME}}.png"
+            - wails3 generate appimage -binary "{{.APP_NAME}}" -icon {{.ICON}} -desktopfile {{.DESKTOP_FILE}} -outputdir {{.OUTPUT_DIR}} -builddir {{.ROOT_DIR}}/build/linux/appimage/build
+        vars:
+            ARCH: '{{.ARCH | default ARCH}}'
+            APP_NAME: '{{.APP_NAME}}'
+            APP_BINARY: '../../../bin/{{.APP_NAME}}'
+            ICON: '{{.APP_NAME}}.png'
+            DESKTOP_FILE: '../{{.APP_NAME}}.desktop'
+            OUTPUT_DIR: '../../../bin'
+
+    generate:dotdesktop:
+        summary: Generates a `.desktop` file
+        dir: build
+        cmds:
+            - mkdir -p {{.ROOT_DIR}}/build/linux/appimage
+            - wails3 generate .desktop -name "{{.APP_NAME}}" -exec "{{.EXEC}}" -icon "{{.ICON}}" -outputfile "{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop" -categories "{{.CATEGORIES}}"
+        vars:
+            APP_NAME: '{{.APP_NAME}}'
+            EXEC: '{{.APP_NAME}}'
+            ICON: '{{.APP_NAME}}'
+            CATEGORIES: 'Development;'
+            OUTPUTFILE: '{{.ROOT_DIR}}/build/linux/{{.APP_NAME}}.desktop'
+
+    run:
+        cmds:
+            - '{{.BIN_DIR}}/{{.APP_NAME}}-{{.ARCH | default ARCH}}'

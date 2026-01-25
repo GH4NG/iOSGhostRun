@@ -1,15 +1,15 @@
 {
-    "fixed": {
-        "file_version": "{{.Info.ProductVersion}}"
-    },
-    "info": {
-        "0000": {
-            "ProductVersion": "{{.Info.ProductVersion}}",
-            "CompanyName": "{{.Info.CompanyName}}",
-            "FileDescription": "{{.Info.ProductName}}",
-            "LegalCopyright": "{{.Info.Copyright}}",
-            "ProductName": "{{.Info.ProductName}}",
-            "Comments": "{{.Info.Comments}}"
-        }
-    }
+	"fixed": {
+		"file_version": "0.1.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.1.0",
+			"CompanyName": "My Company",
+			"FileDescription": "A test application",
+			"LegalCopyright": "© 2026, My Company",
+			"ProductName": "My Product",
+			"Comments": "This is a comment"
+		}
+	}
 }
