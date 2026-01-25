@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=iosghostrun
+Exec=iOSGhostRun
+Icon=iOSGhostRun
+Categories=Development;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false
