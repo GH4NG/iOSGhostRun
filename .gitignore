@@ -1,64 +1,11 @@
-# Build outputs
-build/bin/
-dist/
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.app
-
-# Frontend
-/frontend/dist/
-/frontend/node_modules/
-/frontend/wailsjs/
-/frontend/.vite/
-/frontend/package-lock.json
-*.tsbuildinfo
-
-# Go
-go.sum
-vendor/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*.sublime-*
-*.code-workspace
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Logs
-*.log
-logs/
-
-# Wails
-/wails.json.lock
-
-# Developer Disk Images
-devimages/
-
-# Local data
-data/
-
-# Temp files
-*.tmp
-*.temp
-*.bak
-*~
-
-# Test
-coverage.out
-*.test
-
-# TypeScript cache
-*.tsbuildinfo
-node_modules/
+.task
+.agent
+.shared
+bin
+frontend/bun.lock
+frontend/package-lock.json
+frontend/bindings
+frontend/dist
+frontend/node_modules
+build/linux/appimage/build
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
