@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { MobileIcon, UpdateIcon } from '@radix-icons/vue'
-import { DevicesService, ImageService } from '../../bindings/iOSGhostRun/services'
+import { DevicesService } from '../../bindings/iOSGhostRun/services'
 import type { DeviceInfo as ServiceDeviceInfo } from '../../bindings/iOSGhostRun/services/models'
 import { useNotification } from '../composables/useNotification'
 import { Card } from '@/components/ui/card'
@@ -126,16 +126,7 @@ async function selectDevice(device: ServiceDeviceInfo) {
     selectedUdid.value = device.UDID
     emit('update:modelValue', device.UDID)
     showSuccess(`已选择设备: ${device.DeviceName || '未知设备'}`)
-    try {
-      const mounted = await ImageService.CheckDeveloperImage(device.UDID)
-      imageMounted.value = !!mounted
-      if (imageMounted.value) {
-        showInfo('开发者镜像已就绪，可以开始跑步任务')
-      }
-    } catch (e) {
-      showErrorDialog(`操作失败: ${e instanceof Error ? e.message : '未知错误'}`)
-      imageMounted.value = false
-    }
+  
   } catch (e) {
     showErrorDialog(`操作失败: ${e instanceof Error ? e.message : '未知错误'}`)
   }

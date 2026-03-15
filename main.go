@@ -27,7 +27,6 @@ func init() {
 var (
 	devicesSvc  *services.DevicesService
 	locationSvc *services.LocationService
-	imageSvc    *services.ImageService
 )
 
 func cleanup() {
@@ -48,7 +47,7 @@ func cleanup() {
 	}()
 
 	go func() {
-		if err := imageSvc.UnmountImage(udid); err != nil {
+		if err := services.UnmountImage(udid); err != nil {
 			services.Log.Error("Main", "卸载开发镜像失败: "+err.Error())
 		}
 	}()
@@ -70,7 +69,6 @@ func main() {
 	devicesSvc = &services.DevicesService{}
 	locationSvc = &services.LocationService{}
 	runningSvc := services.NewRunningService()
-	imageSvc = &services.ImageService{}
 
 	app := application.New(application.Options{
 		Name:        "iOSGhostRun",
@@ -81,7 +79,6 @@ func main() {
 			application.NewService(devicesSvc),
 			application.NewService(locationSvc),
 			application.NewService(runningSvc),
-			application.NewService(imageSvc),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
