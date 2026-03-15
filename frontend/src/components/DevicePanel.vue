@@ -73,7 +73,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
-const { showError: showErrorDialog, showSuccess, showInfo } = useNotification()
+const { showError: showErrorDialog, showSuccess, showInfo, showWarning } = useNotification()
 
 const props = defineProps<{
   modelValue: string
@@ -106,7 +106,14 @@ async function refreshDevices() {
       showInfo('未检测到 iOS 设备，请确保设备已连接')
     }
   } catch (e) {
-    showErrorDialog(`操作失败: ${e instanceof Error ? e.message : '未知错误'}`)
+    const message = e instanceof Error ? e.message : '未知错误'
+    const lowerMessage = message.toLowerCase()
+
+    if (message.includes('信任此电脑') || lowerMessage.includes('invalidhostid') || lowerMessage.includes('invalid host id')) {
+      showWarning(message, 6000)
+    } else {
+      showErrorDialog(`操作失败: ${message}`)
+    }
     devices.value = []
   } finally {
     loading.value = false

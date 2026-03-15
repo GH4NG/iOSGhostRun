@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/danielpaulus/go-ios/ios"
@@ -24,15 +25,27 @@ func (d *DevicesService) ListDevices() ([]DeviceInfo, error) {
 	}
 
 	devices := make([]DeviceInfo, 0)
+	trustHintShown := false
 	for _, entry := range list.DeviceList {
 		udid := entry.Properties.SerialNumber
 		info, err := GetDeviceInfo(udid)
 		if err != nil {
 			Log.Debug("DevicesService", "跳过设备: "+udid+" -> "+err.Error())
+			if !trustHintShown {
+				errMsg := strings.ToLower(err.Error())
+				if strings.Contains(errMsg, "invalidhostid") || strings.Contains(errMsg, "invalid host id") {
+					Log.Warn("DevicesService", "设备连接被拒绝：请解锁手机并点击“信任此电脑”，然后重新插拔 USB 再刷新设备列表")
+					trustHintShown = true
+				}
+			}
 			continue
 		}
 
 		devices = append(devices, info)
+	}
+
+	if trustHintShown && len(devices) == 0 {
+		return nil, fmt.Errorf("设备连接被拒绝：请解锁手机并点击“信任此电脑”")
 	}
 
 	Log.Info("DevicesService", fmt.Sprintf("找到 %d 个可连接设备", len(devices)))
@@ -55,8 +68,7 @@ func (d *DevicesService) SelectDevice(udid string) error {
 	d.selectedUDID = udid
 	d.mu.Unlock()
 
-	imgSvc := &ImageService{}
-	if err := imgSvc.MountImage(udid); err != nil {
+	if err := MountImage(udid); err != nil {
 		return err
 	}
 
