@@ -12,15 +12,15 @@
 
 ## 截图
 
-### Windows
+<!-- ### Windows -->
 
 ![Windows 截图](assets/screenshot_windows.png)
 
-### macOS
+<!-- ### macOS
 
 ![macOS 截图](assets/screenshot_macos.png)
 
-![macOS 截图](assets/screenshot_macos2.png)
+![macOS 截图](assets/screenshot_macos2.png) -->
 
 ## 安装与运行
 
