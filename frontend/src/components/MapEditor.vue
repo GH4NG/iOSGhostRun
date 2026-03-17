@@ -557,6 +557,7 @@ const { fitToRoute, centerOnPosition } = {
   fitToRoute: () => {
     if (!map || !routeSource || props.modelValue.length === 0) return
     const extent = routeSource.getExtent()
+    if (!extent) return
     map.getView().fit(extent, { padding: [50, 50, 50, 50], duration: 500 })
   },
   centerOnPosition: (lat: number, lon: number) => {
