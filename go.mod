@@ -4,8 +4,9 @@ go 1.25
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/danielpaulus/go-ios v1.0.202
-	github.com/wailsapp/wails/v3 v3.0.0-alpha.66
+	github.com/danielpaulus/go-ios v1.0.204
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.74
+	howett.net/plist v1.0.2-0.20250314012144-ee69052608d9
 )
 
 require (
@@ -70,6 +71,5 @@ require (
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gvisor.dev/gvisor v0.0.0-20240405191320-0878b34101b5 // indirect
-	howett.net/plist v1.0.2-0.20250314012144-ee69052608d9 // indirect
 	software.sslmate.com/src/go-pkcs12 v0.7.0 // indirect
 )
