@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,25 +13,14 @@ import (
 	"github.com/danielpaulus/go-ios/ios/tunnel"
 )
 
-// TunnelService 隧道管理服务
-type TunnelService struct {
-	mu         sync.Mutex
-	tm         *tunnel.TunnelManager
-	httpServer *http.Server
-	cancel     context.CancelFunc
-}
+const defaultTunnelInfoPort = 49151
 
 var globalTunnelManager *tunnel.TunnelManager
-var defaultTunnelInfoPort = 49151
+var globalTunnelCancel context.CancelFunc
+var tunnelStateMu sync.Mutex
 
-// startTunnel 启动 tunnel
-func (t *TunnelService) startTunnel() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.tm != nil {
-		return nil
-	}
-
+// StartTunnel 启动 tunnel
+func StartTunnel(ctx context.Context) error {
 	pairRecordPath := ResolveAppDir("pairrecords")
 
 	pm, err := tunnel.NewPairRecordManager(pairRecordPath)
@@ -40,21 +30,27 @@ func (t *TunnelService) startTunnel() error {
 
 	userspaceTUN := ios.CheckRoot() != nil
 	tm := tunnel.NewTunnelManager(pm, userspaceTUN)
-	t.tm = tm
-	globalTunnelManager = tm
+	tunnelCtx, cancelTunnel := context.WithCancel(ctx)
 
-	// 更新协程
-	ctx, cancel := context.WithCancel(context.Background())
-	t.cancel = cancel
+	tunnelStateMu.Lock()
+	if globalTunnelManager != nil {
+		tunnelStateMu.Unlock()
+		cancelTunnel()
+		return nil
+	}
+	globalTunnelManager = tm
+	globalTunnelCancel = cancelTunnel
+	tunnelStateMu.Unlock()
+
 	go func() {
 		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-tunnelCtx.Done():
 				return
 			case <-ticker.C:
-				_ = tm.UpdateTunnels(ctx)
+				_ = tm.UpdateTunnels(tunnelCtx)
 			}
 		}
 	}()
@@ -115,53 +111,123 @@ func (t *TunnelService) startTunnel() error {
 		Handler: mux,
 	}
 
-	// 启动 HTTP 服务器
-	t.httpServer = server
-
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			Log.Error("TunnelService", "隧道 HTTP 服务器错误: "+err.Error())
 		}
 	}()
 
-	// 尝试立即更新一次 tunnel 状态
-	go func() {
-		_ = tm.UpdateTunnels(context.Background())
-		time.Sleep(500 * time.Millisecond)
-		_ = tm.UpdateTunnels(context.Background())
-	}()
+	<-tunnelCtx.Done()
 
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	server.Shutdown(shutdownCtx)
+	tm.Close()
+
+	tunnelStateMu.Lock()
+	globalTunnelManager = nil
+	globalTunnelCancel = nil
+	tunnelStateMu.Unlock()
 	return nil
 }
 
 // StopTunnel 停止 tunnel
-func (t *TunnelService) StopTunnel() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	if t.cancel != nil {
-		t.cancel()
-		t.cancel = nil
-	}
-	if t.httpServer != nil {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
-		_ = t.httpServer.Shutdown(shutdownCtx)
-		t.httpServer = nil
-	}
-	if t.tm != nil {
-		_ = t.tm.Close()
-		t.tm = nil
-		globalTunnelManager = nil
+func StopTunnel() error {
+	tunnelStateMu.Lock()
+	cancel := globalTunnelCancel
+	tunnelStateMu.Unlock()
+
+	if cancel != nil {
+		cancel()
 	}
 	return nil
 }
 
-// GetTunnelForDevice 获取指定设备的隧道信息
-func GetTunnelForDevice(udid string) (tunnel.Tunnel, error) {
-	return tunnel.TunnelInfoForDevice(udid, "localhost", defaultTunnelInfoPort)
+func ensureTunnelReady(udid string) error {
+	tunnelStateMu.Lock()
+	needStart := globalTunnelManager == nil
+	tunnelStateMu.Unlock()
+
+	if needStart {
+		go func() {
+			if err := StartTunnel(context.Background()); err != nil {
+				Log.Error("TunnelService", "启动隧道服务失败: "+err.Error())
+			}
+		}()
+	}
+
+	if err := waitTunnelDeviceReady(udid, 15*time.Second); err != nil {
+		return fmt.Errorf("等待隧道就绪失败: %w", err)
+	}
+
+	return nil
 }
 
-// ListRunningTunnels 列出所有运行中的隧道
-func ListRunningTunnels() ([]tunnel.Tunnel, error) {
-	return tunnel.ListRunningTunnels("localhost", defaultTunnelInfoPort)
+func waitTunnelDeviceReady(udid string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+
+	for time.Now().Before(deadline) {
+		if _, err := getTunnelDevice(udid); err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+
+		time.Sleep(300 * time.Millisecond)
+	}
+
+	if lastErr != nil {
+		return fmt.Errorf("设备隧道未就绪: %w", lastErr)
+	}
+
+	return fmt.Errorf("设备隧道未就绪")
+}
+
+// GetTunnelForDevice 获取指定设备的隧道信息
+func getTunnelDevice(udid string) (*ios.DeviceEntry, error) {
+	tunnelInfo, err := tunnel.TunnelInfoForDevice(udid, "localhost", defaultTunnelInfoPort)
+	if err != nil {
+		if strings.Contains(err.Error(), "invalid character") {
+			return nil, fmt.Errorf("隧道服务尚未就绪")
+		}
+		return nil, fmt.Errorf("获取 tunnel 信息失败: %w", err)
+	}
+
+	// 先获取基础设备信息
+	baseDevice, err := ios.GetDevice(udid)
+	if err != nil {
+		return nil, fmt.Errorf("获取设备信息失败: %w", err)
+	}
+
+	// 设置 userspace TUN 信息
+	baseDevice.UserspaceTUN = tunnelInfo.UserspaceTUN
+	baseDevice.UserspaceTUNPort = tunnelInfo.UserspaceTUNPort
+	baseDevice.UserspaceTUNHost = "localhost"
+
+	// 连接到 RSD 服务获取服务端口映射
+	rsdService, err := ios.NewWithAddrPortDevice(tunnelInfo.Address, tunnelInfo.RsdPort, baseDevice)
+	if err != nil {
+		return nil, fmt.Errorf("连接 RSD 服务失败: %w", err)
+	}
+	defer rsdService.Close()
+
+	// 执行握手获取 RsdPortProvider
+	rsdProvider, err := rsdService.Handshake()
+	if err != nil {
+		return nil, fmt.Errorf("RSD 握手失败: %w", err)
+	}
+
+	// 使用 RsdPortProvider 获取带 tunnel 信息的设备
+	device, err := ios.GetDeviceWithAddress(udid, tunnelInfo.Address, rsdProvider)
+	if err != nil {
+		return nil, fmt.Errorf("通过 tunnel 获取设备失败: %w", err)
+	}
+
+	// 保留 userspace TUN 设置
+	device.UserspaceTUN = tunnelInfo.UserspaceTUN
+	device.UserspaceTUNPort = tunnelInfo.UserspaceTUNPort
+	device.UserspaceTUNHost = "localhost"
+
+	return &device, nil
 }

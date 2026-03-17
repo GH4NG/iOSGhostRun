@@ -15,6 +15,12 @@ type DevicesService struct {
 	deviceInfo   map[string]DeviceInfo
 }
 
+func NewDevicesService() *DevicesService {
+	return &DevicesService{
+		deviceInfo: make(map[string]DeviceInfo),
+	}
+}
+
 // ListDevices 获取可连接设备列表
 func (d *DevicesService) ListDevices() ([]DeviceInfo, error) {
 	Log.Info("DevicesService", "列出已连接的设备...")
@@ -64,19 +70,27 @@ func (d *DevicesService) SelectDevice(udid string) error {
 		return err
 	}
 
+	// 先检测 iOS 版本
+	if IsVersionAbove17(udid) {
+		// 再检测 Wintun
+		if !CheckWintunInstalled() {
+			err := fmt.Errorf("iOS 17+ 设备需要安装 Wintun")
+			Log.Error("DevicesService", err.Error())
+			return err
+		}
+
+		Log.Info("DevicesService", "检测到 iOS17+ 且 Wintun 已安装，启用隧道服务")
+		if err := ensureTunnelReady(udid); err != nil {
+			return err
+		}
+	}
+
 	d.mu.Lock()
 	d.selectedUDID = udid
 	d.mu.Unlock()
 
 	if err := MountImage(udid); err != nil {
 		return err
-	}
-
-	if IsVersionAbove17(udid) {
-		tunSvc := &TunnelService{}
-		if err := tunSvc.startTunnel(); err != nil {
-			return err
-		}
 	}
 
 	Log.Info("DevicesService", fmt.Sprintf("挂载开发者镜像完成: %s", udid))

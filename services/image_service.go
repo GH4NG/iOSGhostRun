@@ -28,7 +28,11 @@ func MountImage(udid string) error {
 	}
 
 	if IsVersionAbove17(udid) {
-		return mountPersonalizedImage(device)
+		tunnelDevice, err := getTunnelDevice(udid)
+		if err != nil {
+			return fmt.Errorf("获取隧道设备失败: %w", err)
+		}
+		return mountPersonalizedImage(*tunnelDevice)
 	}
 	return mountDeveloperImage(device)
 }

@@ -23,36 +23,6 @@ func init() {
 	application.RegisterEvent[string]("time")
 }
 
-// package-level service references used by cleanup
-var (
-	devicesSvc  *services.DevicesService
-	locationSvc *services.LocationService
-)
-
-func cleanup() {
-	services.Log.Debug("Main", "正在清理：重置位置和卸载镜像")
-	devInfo, err := devicesSvc.GetSelectedDevice()
-	if err != nil {
-		services.Log.Debug("Main", "没有选中的设备需要清理")
-		return
-	}
-
-	udid := devInfo.UDID
-
-	// 执行重置和卸载操作
-	go func() {
-		if err := locationSvc.ResetLocation(udid); err != nil {
-			services.Log.Error("Main", "重置位置失败: "+err.Error())
-		}
-	}()
-
-	go func() {
-		if err := services.UnmountImage(udid); err != nil {
-			services.Log.Error("Main", "卸载开发镜像失败: "+err.Error())
-		}
-	}()
-}
-
 // main function serves as the application's entry point. It initializes the application, creates a window,
 // and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
 // logs any error that might occur.
@@ -66,9 +36,9 @@ func main() {
 
 	// 创建服务实例
 	loggerSvc := services.NewLoggerService()
-	devicesSvc = &services.DevicesService{}
-	locationSvc = &services.LocationService{}
-	runningSvc := services.NewRunningService()
+	devicesSvc := services.NewDevicesService()
+	locationSvc := services.NewLocationService()
+	runningSvc := services.NewRunningService(locationSvc)
 
 	app := application.New(application.Options{
 		Name:        "iOSGhostRun",
@@ -88,7 +58,21 @@ func main() {
 		},
 		Windows: application.WindowsOptions{DisableQuitOnLastWindowClosed: true},
 		OnShutdown: func() {
-			cleanup()
+			devInfo, err := devicesSvc.GetSelectedDevice()
+			if err != nil {
+				services.Log.Debug("Main", "没有选中的设备需要清理")
+				return
+			}
+			services.Log.Debug("Main", "正在清理选中的设备: "+devInfo.UDID)
+
+			if err := locationSvc.ResetLocation(devInfo.UDID); err != nil {
+				services.Log.Error("Main", "重置设备位置失败: "+err.Error())
+			}
+
+			if err := services.UnmountImage(devInfo.UDID); err != nil {
+				services.Log.Error("Main", "卸载开发者镜像失败: "+err.Error())
+			}
+
 		},
 	})
 
@@ -100,7 +84,7 @@ func main() {
 	// 'BackgroundColour' is the background colour of the window.
 	// 'URL' is the URL that will be loaded into the webview.
 	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name: "Main", Title: "iOS虚拟定位跑步",
+		Title: "iOS虚拟定位跑步",
 		Width: 800, Height: 600,
 
 		Mac: application.MacWindow{

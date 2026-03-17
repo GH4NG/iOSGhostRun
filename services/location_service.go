@@ -16,6 +16,12 @@ type LocationService struct {
 	locationServers map[string]*instruments.LocationSimulationService
 }
 
+func NewLocationService() *LocationService {
+	return &LocationService{
+		locationServers: make(map[string]*instruments.LocationSimulationService),
+	}
+}
+
 func (l *LocationService) SetLocation(udid string, lat, lon float64) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -24,18 +30,18 @@ func (l *LocationService) SetLocation(udid string, lat, lon float64) error {
 		l.locationServers = make(map[string]*instruments.LocationSimulationService)
 	}
 
-	device, err := ios.GetDevice(udid)
-	if err != nil {
-		return fmt.Errorf("获取设备失败: %w", err)
-	}
-
-	// iOS 17+ 使用 instruments 服务
+	// iOS 17+ 需要通过 tunnel 设备对象连接 dtservicehub。
 	if IsVersionAbove17(udid) {
+		device, err := getTunnelDevice(udid)
+		if err != nil {
+			return fmt.Errorf("获取隧道设备失败: %w", err)
+		}
+
 		// 检查是否已经有服务实例，没有才创建
 		server, exists := l.locationServers[udid]
 		if !exists {
 			var err error
-			server, err = instruments.NewLocationSimulationService(device)
+			server, err = instruments.NewLocationSimulationService(*device)
 			if err != nil {
 				return fmt.Errorf("创建位置模拟服务失败: %w", err)
 			}
@@ -48,6 +54,13 @@ func (l *LocationService) SetLocation(udid string, lat, lon float64) error {
 		if err != nil {
 			return fmt.Errorf("启动位置模拟失败: %w", err)
 		}
+
+		return nil
+	}
+
+	device, err := ios.GetDevice(udid)
+	if err != nil {
+		return fmt.Errorf("获取设备失败: %w", err)
 	}
 
 	err = simlocation.SetLocation(device, fmt.Sprintf("%f", lat), fmt.Sprintf("%f", lon))
