@@ -78,23 +78,23 @@ func (l *LocationService) ResetLocation(udid string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if server, exists := l.locationServers[udid]; exists {
-		err := server.StopSimulateLocation()
-		if err != nil {
-			Log.Error("LocationService", fmt.Sprintf("停止位置模拟失败 for %s: %v", udid, err))
+	if IsVersionAbove17(udid) {
+		if server, exists := l.locationServers[udid]; exists {
+			if err := server.StopSimulateLocation(); err != nil {
+				Log.Error("LocationService", fmt.Sprintf("停止位置模拟失败 for %s: %v", udid, err))
+			}
+			delete(l.locationServers, udid)
 		}
-		delete(l.locationServers, udid)
-	}
+	} else {
+		device, err := ios.GetDevice(udid)
+		if err != nil {
+			return fmt.Errorf("获取设备失败: %w", err)
+		}
 
-	device, err := ios.GetDevice(udid)
-	if err != nil {
-		return fmt.Errorf("获取设备失败: %w", err)
-	}
-
-	err = simlocation.ResetLocation(device)
-	if err != nil {
-		Log.Error("LocationService", fmt.Sprintf("重置位置失败 for %s: %v", udid, err))
-		return fmt.Errorf("重置位置失败: %w", err)
+		if err := simlocation.ResetLocation(device); err != nil {
+			Log.Error("LocationService", fmt.Sprintf("重置位置失败 for %s: %v", udid, err))
+			return fmt.Errorf("重置位置失败: %w", err)
+		}
 	}
 
 	Log.Info("LocationService", fmt.Sprintf("设备 %s 位置已重置", udid))
