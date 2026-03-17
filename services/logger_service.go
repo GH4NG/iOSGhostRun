@@ -1,7 +1,7 @@
 package services
 
 import (
-	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -39,7 +39,16 @@ func (l *LoggerService) logMessage(level string, module string, message string) 
 	if len(l.logs) > 1000 {
 		l.logs = l.logs[1:]
 	}
-	fmt.Printf("[%s] [%s] [%s] %s\n", entry.Time, level, module, message)
+	switch level {
+	case "debug":
+		slog.Debug(message)
+	case "info":
+		slog.Info(message)
+	case "warn":
+		slog.Warn(message)
+	case "error":
+		slog.Error(message)
+	}
 
 	// 发送事件到前端
 	application.Get().Event.Emit("log-event", entry)
