@@ -119,6 +119,19 @@ func GetDeviceInfo(udid string) (DeviceInfo, error) {
 	}, nil
 }
 
+func CheckWintunInstalled() bool {
+	if runtime.GOOS != "windows" {
+		return true
+	}
+
+	systemDir := os.Getenv("SystemRoot")
+	wintunPath := filepath.Join(systemDir, "System32", "wintun.dll")
+	if _, err := os.Stat(wintunPath); err == nil {
+		return true
+	}
+	return false
+}
+
 // DeviceInfo 设备信息
 type DeviceInfo struct {
 	UDID           string
