@@ -183,7 +183,7 @@ const currentPosition = ref<{ lat: number; lon: number } | null>(null)
 const isRunning = ref(false)
 const isLogCollapsed = ref(true)
 const showCloseDialog = ref(false)
-const isMacOS = ref(System.IsMac())
+const isMacOS = ref(System.IsMac() || navigator.userAgent.includes('Mac OS X'))
 const showDeveloperModeAlert = ref(false)
 const developerModeAlertMessage = ref('')
 const isMaximized = ref(false)
@@ -228,6 +228,7 @@ async function quitApp() {
 }
 
 onMounted(() => {
+  isMacOS.value = System.IsMac() || navigator.userAgent.includes('Mac OS X');
   const routesStore = useRoutesStore()
   // 加载上次路线
   const lastRoute = routesStore.getLastRoute()
