@@ -156,6 +156,7 @@ import { Events } from '@wailsio/runtime'
 import { RunningService } from '../../bindings/iOSGhostRun/services'
 import { formatDistance, formatTime, type RoutePoint } from '../lib/routeStorage'
 import { useNotification } from '../composables/useNotification'
+import { loadRunningParams, saveRunningParams } from '../lib/runningParams'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -185,10 +186,12 @@ const emit = defineEmits<{
   completed: []
 }>()
 
-const speed = ref(8)
-const speedVariance = ref(10)
-const routeOffset = ref(2)
-const loopCount = ref(1)
+// 从本地存储加载参数，若无则使用默认值
+const savedParams = loadRunningParams()
+const speed = ref(savedParams.speed)
+const speedVariance = ref(savedParams.speedVariance)
+const routeOffset = ref(savedParams.routeOffset)
+const loopCount = ref(savedParams.loopCount)
 const status = ref<RunningStatus | null>(null)
 
 const speedArray = computed({
@@ -308,6 +311,14 @@ onMounted(() => {
 
 // 监听速度变化
 watch(speed, async newSpeed => {
+  // 保存参数到本地存储
+  saveRunningParams({
+    speed: newSpeed,
+    speedVariance: speedVariance.value,
+    routeOffset: routeOffset.value,
+    loopCount: loopCount.value
+  })
+  
   if (isRunning.value) {
     try {
       await RunningService.SetSpeed(newSpeed)
@@ -317,8 +328,36 @@ watch(speed, async newSpeed => {
   }
 })
 
+// 监听波动偏差变化
+watch(speedVariance, () => {
+  saveRunningParams({
+    speed: speed.value,
+    speedVariance: speedVariance.value,
+    routeOffset: routeOffset.value,
+    loopCount: loopCount.value
+  })
+})
+
+// 监听路线补正变化
+watch(routeOffset, () => {
+  saveRunningParams({
+    speed: speed.value,
+    speedVariance: speedVariance.value,
+    routeOffset: routeOffset.value,
+    loopCount: loopCount.value
+  })
+})
+
 // 监听圈数变化
 watch(loopCount, async newLoopCount => {
+  // 保存参数到本地存储
+  saveRunningParams({
+    speed: speed.value,
+    speedVariance: speedVariance.value,
+    routeOffset: routeOffset.value,
+    loopCount: newLoopCount
+  })
+  
   if (!isRunning.value) {
     try {
       await RunningService.SetLoopCount(newLoopCount)
