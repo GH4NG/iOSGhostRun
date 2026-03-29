@@ -10,24 +10,29 @@
         :class="isMacOS ? 'px-3' : 'pl-4 pr-1 justify-between'" style="--wails-draggable: drag">
         <template v-if="isMacOS">
           <div class="flex items-center gap-2" style="--wails-draggable: no-drag">
-            <button
-              class="group w-3 h-3 rounded-full bg-[#ff5f57] hover:brightness-95 transition flex items-center justify-center"
-              aria-label="关闭" @click="requestClose">
+            <TitlebarButton
+              class="group w-3 h-3 rounded-full bg-[#ff5f57] hover:brightness-95"
+              aria-label="关闭" 
+              @click="requestClose">
               <span
                 class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">×</span>
-            </button>
-            <button
-              class="group w-3 h-3 rounded-full bg-[#febc2e] hover:brightness-95 transition flex items-center justify-center"
-              aria-label="最小化" @click="onMinimise">
+            </TitlebarButton>
+            <TitlebarButton
+              class="group w-3 h-3 rounded-full bg-[#febc2e] hover:brightness-95"
+              aria-label="最小化" 
+              @click="onMinimise">
               <span
                 class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">-</span>
-            </button>
-            <button
-              class="group w-3 h-3 rounded-full bg-[#28c840] hover:brightness-95 transition flex items-center justify-center"
-              aria-label="最大化或还原" @click="onToggleMaximise">
+            </TitlebarButton>
+            <TitlebarButton
+              class="group w-3 h-3 rounded-full bg-[#28c840] hover:brightness-95"
+              :aria-label="isMaximized ? '还原' : '最大化'"
+              @click="onToggleMaximise()">
               <span
-                class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">+</span>
-            </button>
+                class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                {{ isMaximized ? '−' : '+' }}
+              </span>
+            </TitlebarButton>
           </div>
 
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -43,21 +48,25 @@
           </div>
 
           <div class="flex items-center gap-1" style="--wails-draggable: no-drag">
-            <button
-              class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors text-lg leading-none"
-              aria-label="最小化" @click="onMinimise">
-              -
-            </button>
-            <button
-              class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors text-sm leading-none"
-              aria-label="最大化或还原" @click="onToggleMaximise">
-              □
-            </button>
-            <button
-              class="w-9 h-7 rounded-md text-muted-foreground hover:text-white hover:bg-destructive transition-colors text-base leading-none"
-              aria-label="关闭" @click="requestClose">
-              ×
-            </button>
+            <TitlebarButton
+              class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
+              aria-label="最小化" 
+              @click="onMinimise">
+              <MinusIcon class="w-4 h-4" />
+            </TitlebarButton>
+            <TitlebarButton
+              class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
+              :aria-label="isMaximized ? '还原' : '最大化'"
+              @click="onToggleMaximise()">
+              <SquareIcon v-if="!isMaximized" class="w-4 h-4" />
+              <CopyIcon v-else class="w-4 h-4" />
+            </TitlebarButton>
+            <TitlebarButton
+              class="w-9 h-7 rounded-md text-muted-foreground hover:text-white hover:bg-destructive flex items-center justify-center"
+              aria-label="关闭" 
+              @click="requestClose">
+              <Cross1Icon class="w-4 h-4" />
+            </TitlebarButton>
           </div>
         </template>
       </header>
@@ -155,7 +164,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { ChevronDownIcon, ChevronUpIcon } from '@radix-icons/vue'
+import { ChevronDownIcon, ChevronUpIcon, MinusIcon, SquareIcon, CopyIcon, Cross1Icon } from '@radix-icons/vue'
 import { Events, System, Window } from '@wailsio/runtime'
 import MapEditor from './components/MapEditor.vue'
 import LogPanel from './components/LogPanel.vue'
@@ -165,6 +174,7 @@ import Notification from './components/Notification.vue'
 import { useRoutesStore, type RoutePoint } from './stores/routes'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { TitlebarButton } from '@/components/ui/titlebar-button'
 
 const mapEditor = ref<InstanceType<typeof MapEditor> | null>(null)
 const selectedUdid = ref('')
@@ -176,6 +186,7 @@ const showCloseDialog = ref(false)
 const isMacOS = ref(System.IsMac())
 const showDeveloperModeAlert = ref(false)
 const developerModeAlertMessage = ref('')
+const isMaximized = ref(false)
 
 function onPositionUpdate(pos: { lat: number; lon: number }) {
   currentPosition.value = pos
@@ -199,6 +210,7 @@ async function onMinimise() {
 
 async function onToggleMaximise() {
   await Window.ToggleMaximise()
+  isMaximized.value = !isMaximized.value
 }
 
 function requestClose() {
