@@ -5,6 +5,63 @@
       <!-- 通知系统 -->
       <Notification />
 
+      <!-- 自定义标题栏 -->
+      <header class="h-11 shrink-0 border-b border-border bg-card/70 backdrop-blur-md relative flex items-center"
+        :class="isMacOS ? 'px-3' : 'pl-4 pr-1 justify-between'" style="--wails-draggable: drag">
+        <template v-if="isMacOS">
+          <div class="flex items-center gap-2" style="--wails-draggable: no-drag">
+            <button
+              class="group w-3 h-3 rounded-full bg-[#ff5f57] hover:brightness-95 transition flex items-center justify-center"
+              aria-label="关闭" @click="requestClose">
+              <span
+                class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">×</span>
+            </button>
+            <button
+              class="group w-3 h-3 rounded-full bg-[#febc2e] hover:brightness-95 transition flex items-center justify-center"
+              aria-label="最小化" @click="onMinimise">
+              <span
+                class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">-</span>
+            </button>
+            <button
+              class="group w-3 h-3 rounded-full bg-[#28c840] hover:brightness-95 transition flex items-center justify-center"
+              aria-label="最大化或还原" @click="onToggleMaximise">
+              <span
+                class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">+</span>
+            </button>
+          </div>
+
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span class="text-xs font-bold tracking-[0.12em] uppercase text-muted-foreground">iOSGhostRun</span>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-2 h-2 rounded-full bg-primary/80"></div>
+            <span
+              class="text-xs font-bold tracking-[0.12em] uppercase text-muted-foreground truncate">iOSGhostRun</span>
+          </div>
+
+          <div class="flex items-center gap-1" style="--wails-draggable: no-drag">
+            <button
+              class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors text-lg leading-none"
+              aria-label="最小化" @click="onMinimise">
+              -
+            </button>
+            <button
+              class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors text-sm leading-none"
+              aria-label="最大化或还原" @click="onToggleMaximise">
+              □
+            </button>
+            <button
+              class="w-9 h-7 rounded-md text-muted-foreground hover:text-white hover:bg-destructive transition-colors text-base leading-none"
+              aria-label="关闭" @click="requestClose">
+              ×
+            </button>
+          </div>
+        </template>
+      </header>
+
       <div class="flex-1 flex overflow-hidden">
         <!-- 左侧面板 -->
         <aside
@@ -49,6 +106,32 @@
         </main>
       </div>
 
+      <div v-if="showCloseDialog" class="fixed inset-0 z-[10000] flex items-center justify-center px-6"
+        style="--wails-draggable: no-drag">
+        <div class="absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="showCloseDialog = false"></div>
+        <div class="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl p-6 space-y-5">
+          <div class="space-y-2">
+            <h2 class="text-lg font-bold">关闭 iOSGhostRun</h2>
+            <p class="text-sm text-muted-foreground">你希望直接退出程序，还是最小化到任务栏？</p>
+          </div>
+          <div class="flex items-center justify-end gap-2">
+            <button class="px-4 h-9 rounded-md border border-border hover:bg-secondary/40 transition-colors"
+              @click="showCloseDialog = false">
+              取消
+            </button>
+            <button class="px-4 h-9 rounded-md border border-border hover:bg-secondary/40 transition-colors"
+              @click="minimiseToTaskbar">
+              最小化到任务栏
+            </button>
+            <button
+              class="px-4 h-9 rounded-md bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
+              @click="quitApp">
+              关闭程序
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- 开发者模式提醒弹窗 -->
       <div v-if="showDeveloperModeAlert" class="fixed inset-0 z-[10000] flex items-center justify-center px-6"
         style="--wails-draggable: no-drag">
@@ -73,6 +156,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ChevronDownIcon, ChevronUpIcon } from '@radix-icons/vue'
+import { Events, System, Window } from '@wailsio/runtime'
 import MapEditor from './components/MapEditor.vue'
 import LogPanel from './components/LogPanel.vue'
 import DevicePanel from './components/DevicePanel.vue'
@@ -88,6 +172,8 @@ const routePoints = ref<RoutePoint[]>([])
 const currentPosition = ref<{ lat: number; lon: number } | null>(null)
 const isRunning = ref(false)
 const isLogCollapsed = ref(true)
+const showCloseDialog = ref(false)
+const isMacOS = ref(System.IsMac())
 const showDeveloperModeAlert = ref(false)
 const developerModeAlertMessage = ref('')
 
@@ -107,6 +193,28 @@ function onRunCompleted() {
   currentPosition.value = null
 }
 
+async function onMinimise() {
+  await Window.Minimise()
+}
+
+async function onToggleMaximise() {
+  await Window.ToggleMaximise()
+}
+
+function requestClose() {
+  showCloseDialog.value = true
+}
+
+async function minimiseToTaskbar() {
+  showCloseDialog.value = false
+  await Window.Minimise()
+}
+
+async function quitApp() {
+  showCloseDialog.value = false
+  await Events.Emit('app:close-quit')
+}
+
 onMounted(() => {
   // 加载上次路线
   const lastRoute = loadRoute('last_route')
@@ -119,15 +227,24 @@ onMounted(() => {
     })
   }
 
-  offDeveloperModeAlert = Events.On('developer-mode-menu-revealed', event => {
+  offCloseRequested = Events.On('app:close-requested', () => {
+    showCloseDialog.value = true
+  })
+
+  offDeveloperModeAlert = Events.On('developer-mode-menu-revealed', (event) => {
     developerModeAlertMessage.value = event.data
     showDeveloperModeAlert.value = true
   })
 })
 
+let offCloseRequested: (() => void) | null = null
 let offDeveloperModeAlert: (() => void) | null = null
 
 onUnmounted(() => {
+  if (offCloseRequested) {
+    offCloseRequested()
+    offCloseRequested = null
+  }
   if (offDeveloperModeAlert) {
     offDeveloperModeAlert()
     offDeveloperModeAlert = null

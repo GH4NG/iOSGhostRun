@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
@@ -21,6 +22,7 @@ func init() {
 	// This is not required, but the binding generator will pick up registered events
 	// and provide a strongly typed JS/TS API for them.
 	application.RegisterEvent[string]("time")
+	application.RegisterEvent[string]("developer-mode-menu-revealed")
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
@@ -77,6 +79,7 @@ func main() {
 	})
 
 	app.SetIcon(icon)
+	var allowQuit atomic.Bool
 
 	// Create a new window with the necessary options.
 	// 'Title' is the title of the window.
@@ -86,39 +89,30 @@ func main() {
 	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "iOS虚拟定位跑步",
 		Width: 800, Height: 600,
+		Frameless:        true,
+		BackgroundColour: application.NewRGBA(27, 38, 54, 230),
 
 		Mac: application.MacWindow{
-			InvisibleTitleBarHeight: 50,
-			Backdrop:                application.MacBackdropTranslucent,
-			TitleBar:                application.MacTitleBarHiddenInset,
+			Backdrop: application.MacBackdropTransparent,
+			TitleBar: application.MacTitleBarHidden,
 		},
 
-		BackgroundColour: application.NewRGB(27, 38, 54),
-		URL:              "/",
+		URL: "/",
 	})
 
-	// 将窗口附加到桌面层
-	// desktopWindowTool := NewDesktopWindowTool(window)
-	// desktopWindowTool.AttachToDesktop()
-
-	sysTray := app.SystemTray.New()
-	sysTray.SetIcon(icon)
-	sysTray.SetLabel("iOSGhostRun")
-	sysTray.SetTooltip("iOS虚拟定位跑步")
-	sysTray.OnClick(func() {
-		if window != nil {
-			window.Show()
-			window.Focus()
+	window.OnWindowEvent(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		if allowQuit.Load() {
+			return
 		}
+		event.Cancel()
+		app.Event.Emit("app:close-requested")
 	})
-	trayMenu := app.Menu.New()
-	sysTray.SetMenu(trayMenu)
-	trayMenu.Add("打开").OnClick(func(ctx *application.Context) {
-		window.Show()
-		window.Focus()
-	})
-	trayMenu.Add("退出").OnClick(func(ctx *application.Context) {
-		app.Quit()
+
+	app.Event.On("app:close-quit", func(_ *application.CustomEvent) {
+		if allowQuit.Load() {
+			return
+		}
+		allowQuit.Store(true)
 	})
 
 	// Run the application. This blocks until the application has been exited.
