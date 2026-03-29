@@ -26,8 +26,8 @@ github.com/coder/websocket v1.8.14 h1:9L0p0iKiNOibykf283eHkKUHHrpG7f65OE3BhhO7v9
 github.com/coder/websocket v1.8.14/go.mod h1:NX3SzP+inril6yawo5CQXx8+fk145lPDC6pumgx0mVg=
 github.com/cyphar/filepath-securejoin v0.6.1 h1:5CeZ1jPXEiYt3+Z6zqprSAgSWiggmpVyciv8syjIpVE=
 github.com/cyphar/filepath-securejoin v0.6.1/go.mod h1:A8hd4EnAeyujCJRrICiOWqjS1AX0a9kM5XL+NwKoYSc=
-github.com/danielpaulus/go-ios v1.0.204 h1:YvmsJKjzqROEHuvtGm8XY4b6kBNJMx4f8RosdSaCpjU=
-github.com/danielpaulus/go-ios v1.0.204/go.mod h1:ZkUcaC59yNba47j/+ULKsCi3dYPFwY9r39PxdmVmLHE=
+github.com/danielpaulus/go-ios v1.0.206 h1:VAWpKFyv/det/DfhUhF6hl4xNTpc3QBC8Q7u8KhBxBo=
+github.com/danielpaulus/go-ios v1.0.206/go.mod h1:ZkUcaC59yNba47j/+ULKsCi3dYPFwY9r39PxdmVmLHE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
