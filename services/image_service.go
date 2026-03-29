@@ -2,11 +2,13 @@ package services
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Masterminds/semver"
 	"github.com/danielpaulus/go-ios/ios"
 	"github.com/danielpaulus/go-ios/ios/amfi"
 	"github.com/danielpaulus/go-ios/ios/imagemounter"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // MountImage 挂载镜像
@@ -19,9 +21,16 @@ func MountImage(udid string) error {
 	// 检查并尝试启用开发者模式
 	if enabled, err := imagemounter.IsDevModeEnabled(device); err == nil && !enabled {
 		Log.Warn("ImageService", "设备开发者模式未启用，尝试请求启用")
-		if err := amfi.EnableDeveloperMode(device, true); err != nil {
+		err := amfi.EnableDeveloperMode(device, true)
+		if err != nil {
+			if strings.Contains(err.Error(), "Developer Mode menu has been revealed in Settings") {
+				msg := "开发者模式菜单已显示，请在 设置 → 隐私与安全性 中启用开发者模式，然后重试"
+				Log.Info("ImageService", msg)
+				application.Get().Event.Emit("developer-mode-menu-revealed", msg)
+				return fmt.Errorf("%s", msg)
+			}
 			Log.Error("ImageService", fmt.Sprintf("启用开发者模式失败: %v", err))
-			return fmt.Errorf("启用开发者模式失败: %w", err)
+			return err
 		}
 		Log.Info("ImageService", "已请求启用开发者模式，请在设备上确认并重试挂载")
 		return nil

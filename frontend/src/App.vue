@@ -48,12 +48,30 @@
           </div>
         </main>
       </div>
+
+      <!-- 开发者模式提醒弹窗 -->
+      <div v-if="showDeveloperModeAlert" class="fixed inset-0 z-[10000] flex items-center justify-center px-6"
+        style="--wails-draggable: no-drag">
+        <div class="absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="showDeveloperModeAlert = false"></div>
+        <div class="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl p-6 space-y-5">
+          <div class="space-y-2">
+            <h2 class="text-lg font-bold">启用开发者模式</h2>
+            <p class="text-sm text-muted-foreground">{{ developerModeAlertMessage }}</p>
+          </div>
+          <div class="flex items-center justify-end gap-2">
+            <button class="px-4 h-9 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              @click="showDeveloperModeAlert = false">
+              我已启用
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </TooltipProvider>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ChevronDownIcon, ChevronUpIcon } from '@radix-icons/vue'
 import MapEditor from './components/MapEditor.vue'
 import LogPanel from './components/LogPanel.vue'
@@ -70,6 +88,8 @@ const routePoints = ref<RoutePoint[]>([])
 const currentPosition = ref<{ lat: number; lon: number } | null>(null)
 const isRunning = ref(false)
 const isLogCollapsed = ref(true)
+const showDeveloperModeAlert = ref(false)
+const developerModeAlertMessage = ref('')
 
 function onPositionUpdate(pos: { lat: number; lon: number }) {
   currentPosition.value = pos
@@ -97,6 +117,20 @@ onMounted(() => {
         onLocatingPoint(routePoints.value[0])
       }
     })
+  }
+
+  offDeveloperModeAlert = Events.On('developer-mode-menu-revealed', event => {
+    developerModeAlertMessage.value = event.data
+    showDeveloperModeAlert.value = true
+  })
+})
+
+let offDeveloperModeAlert: (() => void) | null = null
+
+onUnmounted(() => {
+  if (offDeveloperModeAlert) {
+    offDeveloperModeAlert()
+    offDeveloperModeAlert = null
   }
 })
 </script>
