@@ -33,6 +33,16 @@ func (d *DevicesService) ListDevices() ([]DeviceInfo, error) {
 	devices := make([]DeviceInfo, 0)
 	trustHintShown := false
 	for _, entry := range list.DeviceList {
+		// 仅接受 USB 连接的设备，过滤掉 Network 或其他连接类型
+		connectionType := entry.Properties.ConnectionType
+		if connectionType == "" {
+			connectionType = "unknown"
+		}
+		if strings.ToLower(connectionType) != "usb" {
+			Log.Debug("DevicesService", fmt.Sprintf("跳过非 USB 连接设备: %s (连接类型: %s)", entry.Properties.SerialNumber, connectionType))
+			continue
+		}
+
 		udid := entry.Properties.SerialNumber
 		info, err := GetDeviceInfo(udid)
 		if err != nil {

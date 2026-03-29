@@ -103,7 +103,7 @@ async function refreshDevices() {
     if (devices.value.length > 0) {
       showSuccess(`检测到 ${devices.value.length} 个 iOS 设备`)
     } else {
-      showInfo('未检测到 iOS 设备，请确保设备已连接')
+      showInfo('未检测到 iOS 设备，请确保设备已通过USB连接')
     }
   } catch (e) {
     const message = e instanceof Error ? e.message : '未知错误'
