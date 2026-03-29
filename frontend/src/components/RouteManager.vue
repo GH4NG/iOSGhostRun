@@ -161,15 +161,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { DrawingPinFilledIcon as PinFilledIcon, TrashIcon, PlusIcon, RocketIcon, DownloadIcon } from '@radix-icons/vue'
 import {
-  listRoutes,
-  saveRoute,
-  loadRoute,
-  deleteRoute,
   calculateRouteDistance,
   formatDistance,
-  type RoutePoint,
-  type SavedRoute
-} from '../lib/routeStorage'
+  type RoutePoint
+} from '../lib/routeUtils'
+import { useRoutesStore, type SavedRoute } from '../stores/routes'
 import { GCJ02ToWGS84, WGS84ToGCJ02, BD09ToWGS84 } from '../lib/transform'
 import { useNotification } from '../composables/useNotification'
 import { Card } from '@/components/ui/card'
@@ -179,6 +175,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const { showError: showErrorDialog, showSuccess } = useNotification()
+const routesStore = useRoutesStore()
 
 const props = defineProps<{
   modelValue: RoutePoint[]
@@ -218,20 +215,20 @@ function selectCoordSystem(system: 'wgs84' | 'gcj02' | 'bd09') {
 }
 
 function refreshRoutes() {
-  savedRoutes.value = listRoutes()
+  savedRoutes.value = routesStore.listRoutes()
 }
 
 function saveCurrentRoute() {
   if (!canSave.value) return
 
-  saveRoute(newRouteName.value.trim(), routePoints.value)
+  routesStore.saveRoute(newRouteName.value.trim(), routePoints.value)
   showSuccess(`路线 "${newRouteName.value.trim()}" 已保存`)
   newRouteName.value = ''
   refreshRoutes()
 }
 
 function loadRouteByName(name: string) {
-  const points = loadRoute(name)
+  const points = routesStore.loadRoute(name)
   if (points && points.length > 0) {
     emit('update:modelValue', points)
     emit('locating-point', points[0])
@@ -240,7 +237,7 @@ function loadRouteByName(name: string) {
 }
 
 function deleteRouteByName(name: string) {
-  deleteRoute(name)
+  routesStore.deleteRoute(name)
   showSuccess(`路线 "${name}" 已删除`)
   refreshRoutes()
 }

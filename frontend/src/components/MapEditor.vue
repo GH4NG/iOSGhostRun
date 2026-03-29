@@ -192,7 +192,8 @@ import Point from 'ol/geom/Point'
 import LineString from 'ol/geom/LineString'
 import { Style, Stroke, Circle, Fill } from 'ol/style'
 import 'ol/ol.css'
-import { type RoutePoint, calculateRouteDistance, formatDistance, saveLastRoute } from '../lib/routeStorage'
+import { type RoutePoint, calculateRouteDistance, formatDistance } from '../lib/routeUtils'
+import { useRoutesStore } from '../stores/routes'
 import { WGS84ToGCJ02, GCJ02ToWGS84 } from '../lib/transform'
 import { useNotification } from '../composables/useNotification'
 import { Card } from '@/components/ui/card'
@@ -215,6 +216,7 @@ const emit = defineEmits<{
 }>()
 
 const { showError: showErrorDialog } = useNotification()
+const routesStore = useRoutesStore()
 
 const mapContainer = ref<HTMLDivElement | null>(null)
 const searchQuery = ref('')
@@ -402,7 +404,7 @@ onMounted(() => {
 
     const newPoints = [...props.modelValue, newPoint]
     emit('update:modelValue', newPoints)
-    saveLastRoute(newPoints)
+    routesStore.saveLastRoute(newPoints)
   })
 
   updateRouteDisplay()
@@ -435,7 +437,7 @@ watch(
     updateRouteDisplay()
     // 保存上次路线
     if (newPoints && newPoints.length > 0) {
-      saveLastRoute(newPoints)
+      routesStore.saveLastRoute(newPoints)
     }
   },
   { deep: true }

@@ -162,7 +162,7 @@ import LogPanel from './components/LogPanel.vue'
 import DevicePanel from './components/DevicePanel.vue'
 import RunningControl from './components/RunningControl.vue'
 import Notification from './components/Notification.vue'
-import { loadRoute, type RoutePoint } from './lib/routeStorage'
+import { useRoutesStore, type RoutePoint } from './stores/routes'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
@@ -216,8 +216,9 @@ async function quitApp() {
 }
 
 onMounted(() => {
+  const routesStore = useRoutesStore()
   // 加载上次路线
-  const lastRoute = loadRoute('last_route')
+  const lastRoute = routesStore.getLastRoute()
   if (lastRoute) {
     routePoints.value = lastRoute
     nextTick(() => {
