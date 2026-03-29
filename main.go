@@ -6,6 +6,7 @@ import (
 	"iOSGhostRun/services"
 	"log"
 	"log/slog"
+	"sync/atomic"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -58,24 +59,7 @@ func main() {
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
-		Windows: application.WindowsOptions{DisableQuitOnLastWindowClosed: true},
-		OnShutdown: func() {
-			devInfo, err := devicesSvc.GetSelectedDevice()
-			if err != nil {
-				services.Log.Debug("Main", "没有选中的设备需要清理")
-				return
-			}
-			services.Log.Debug("Main", "正在清理选中的设备: "+devInfo.UDID)
-
-			if err := locationSvc.ResetLocation(devInfo.UDID); err != nil {
-				services.Log.Error("Main", "重置设备位置失败: "+err.Error())
-			}
-
-			if err := services.UnmountImage(devInfo.UDID); err != nil {
-				services.Log.Error("Main", "卸载开发者镜像失败: "+err.Error())
-			}
-
-		},
+		Windows: application.WindowsOptions{DisableQuitOnLastWindowClosed: false},
 	})
 
 	app.SetIcon(icon)
@@ -112,7 +96,14 @@ func main() {
 		if allowQuit.Load() {
 			return
 		}
+		services.SetAppShuttingDown(true)
 		allowQuit.Store(true)
+		runningSvc.StopRun()
+		devInfo, err := devicesSvc.GetSelectedDevice()
+		if err == nil {
+			_ = services.UnmountImage(devInfo.UDID)
+		}
+		window.Close()
 	})
 
 	// Run the application. This blocks until the application has been exited.

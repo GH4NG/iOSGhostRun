@@ -2,6 +2,7 @@ package services
 
 import (
 	"log/slog"
+	"sync/atomic"
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -15,6 +16,7 @@ type LogEntry struct {
 }
 
 var Log *LoggerService
+var appShuttingDown atomic.Bool
 
 type LoggerService struct {
 	logs []LogEntry
@@ -25,6 +27,12 @@ func NewLoggerService() *LoggerService {
 		logs: make([]LogEntry, 0),
 	}
 	return Log
+}
+
+// SetAppShuttingDown 设置应用是否处于退出阶段。
+// 退出阶段会停止向前端发送 log-event，避免窗口销毁期间的事件分发死锁。
+func SetAppShuttingDown(v bool) {
+	appShuttingDown.Store(v)
 }
 
 // logMessage 记录日志消息
@@ -50,8 +58,10 @@ func (l *LoggerService) logMessage(level string, module string, message string) 
 		slog.Error(message)
 	}
 
-	// 发送事件到前端
-	application.Get().Event.Emit("log-event", entry)
+	// 退出阶段不再向前端分发日志事件，避免关闭流程阻塞。
+	if !appShuttingDown.Load() {
+		application.Get().Event.Emit("log-event", entry)
+	}
 }
 
 // GetLogs 获取所有日志

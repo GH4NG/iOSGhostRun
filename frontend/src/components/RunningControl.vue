@@ -118,7 +118,7 @@
               <span>暂停</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>暂停当前同步任务</TooltipContent>
+          <TooltipContent>暂停当前任务</TooltipContent>
         </Tooltip>
 
         <Tooltip v-if="isPaused">
@@ -130,7 +130,7 @@
               <span>恢复</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>恢复位置同步</TooltipContent>
+          <TooltipContent>恢复当前任务</TooltipContent>
         </Tooltip>
 
         <Tooltip v-if="isRunning || isPaused">
@@ -142,7 +142,7 @@
               <span>停止</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>终止当前同步任务</TooltipContent>
+          <TooltipContent>终止当前任务</TooltipContent>
         </Tooltip>
       </div>
     </div>
