@@ -1,10 +1,10 @@
 module iOSGhostRun
 
-go 1.25
+go 1.26
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/danielpaulus/go-ios v1.0.206
+	github.com/danielpaulus/go-ios v1.0.207
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.74
 	howett.net/plist v1.0.2-0.20250314012144-ee69052608d9
 )
