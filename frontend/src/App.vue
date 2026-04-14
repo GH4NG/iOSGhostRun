@@ -10,26 +10,19 @@
         :class="isMacOS ? 'px-3' : 'pl-4 pr-1 justify-between'" style="--wails-draggable: drag">
         <template v-if="isMacOS">
           <div class="flex items-center gap-2" style="--wails-draggable: no-drag">
-            <TitlebarButton
-              class="group w-3 h-3 rounded-full bg-[#ff5f57] hover:brightness-95"
-              aria-label="关闭" 
+            <TitlebarButton class="group w-3 h-3 rounded-full bg-[#ff5f57] hover:brightness-95" aria-label="关闭"
               @click="requestClose">
               <span
                 class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">×</span>
             </TitlebarButton>
-            <TitlebarButton
-              class="group w-3 h-3 rounded-full bg-[#febc2e] hover:brightness-95"
-              aria-label="最小化" 
+            <TitlebarButton class="group w-3 h-3 rounded-full bg-[#febc2e] hover:brightness-95" aria-label="最小化"
               @click="onMinimise">
               <span
                 class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">-</span>
             </TitlebarButton>
-            <TitlebarButton
-              class="group w-3 h-3 rounded-full bg-[#28c840] hover:brightness-95"
-              :aria-label="isMaximized ? '还原' : '最大化'"
-              @click="onToggleMaximise()">
-              <span
-                class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">
+            <TitlebarButton class="group w-3 h-3 rounded-full bg-[#28c840] hover:brightness-95"
+              :aria-label="isMaximized ? '还原' : '最大化'" @click="onToggleMaximise()">
+              <span class="text-[8px] leading-none text-black/70 opacity-0 group-hover:opacity-100 transition-opacity">
                 {{ isMaximized ? '−' : '+' }}
               </span>
             </TitlebarButton>
@@ -50,21 +43,18 @@
           <div class="flex items-center gap-1" style="--wails-draggable: no-drag">
             <TitlebarButton
               class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
-              aria-label="最小化" 
-              @click="onMinimise">
+              aria-label="最小化" @click="onMinimise">
               <MinusIcon class="w-4 h-4" />
             </TitlebarButton>
             <TitlebarButton
               class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
-              :aria-label="isMaximized ? '还原' : '最大化'"
-              @click="onToggleMaximise()">
+              :aria-label="isMaximized ? '还原' : '最大化'" @click="onToggleMaximise()">
               <SquareIcon v-if="!isMaximized" class="w-4 h-4" />
               <CopyIcon v-else class="w-4 h-4" />
             </TitlebarButton>
             <TitlebarButton
               class="w-9 h-7 rounded-md text-muted-foreground hover:text-white hover:bg-destructive flex items-center justify-center"
-              aria-label="关闭" 
-              @click="requestClose">
+              aria-label="关闭" @click="requestClose">
               <Cross1Icon class="w-4 h-4" />
             </TitlebarButton>
           </div>
@@ -74,15 +64,42 @@
       <div class="flex-1 flex overflow-hidden">
         <!-- 左侧面板 -->
         <aside
-          class="w-80 border-r border-border bg-card/50 backdrop-blur-md flex flex-col p-0 gap-0 overflow-hidden shadow-2xl z-20">
-          <div class="flex-1 min-h-0">
-            <ScrollArea class="h-full px-4 pb-6">
-              <div class="flex flex-col gap-6 pt-2">
-                <DevicePanel v-model="selectedUdid" />
-                <RunningControl :udid="selectedUdid" :route-points="routePoints" @position-update="onPositionUpdate"
-                  @completed="onRunCompleted" />
+          class="shrink-0 border-r border-border/70 bg-card/75 backdrop-blur-md overflow-hidden shadow-2xl z-20 transition-all duration-300"
+          :class="isSidebarCollapsed ? 'w-14' : 'w-80'">
+          <div v-if="isSidebarCollapsed" class="h-full flex flex-col items-center py-4 px-2 gap-3">
+            <TitlebarButton
+              class="h-10 w-10 rounded-xl border border-border/60 bg-background/70 text-muted-foreground hover:text-foreground hover:bg-secondary/40 flex items-center justify-center"
+              aria-label="展开左侧栏" @click="isSidebarCollapsed = false">
+              <ChevronRightIcon class="w-4 h-4" />
+            </TitlebarButton>
+            <div class="w-8 h-px bg-border/60"></div>
+            <div
+              class="writing-mode-vertical text-[10px] font-black tracking-[0.2em] text-muted-foreground/60 select-none">
+              控制面板
+            </div>
+          </div>
+
+          <div v-else class="h-full flex flex-col min-h-0">
+            <div class="flex items-center justify-between px-4 pt-4 pb-2">
+              <div class="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground/55">
+                控制面板
               </div>
-            </ScrollArea>
+              <TitlebarButton
+                class="h-8 w-8 rounded-lg border border-border/60 bg-background/70 text-muted-foreground hover:text-foreground hover:bg-secondary/40 flex items-center justify-center"
+                aria-label="收起左侧栏" @click="isSidebarCollapsed = true">
+                <ChevronLeftIcon class="w-4 h-4" />
+              </TitlebarButton>
+            </div>
+
+            <div class="flex-1 min-h-0">
+              <ScrollArea class="h-full px-4 pb-6">
+                <div class="flex flex-col gap-5 pt-2">
+                  <DevicePanel v-model="selectedUdid" />
+                  <RunningControl :udid="selectedUdid" :route-points="routePoints" @position-update="onPositionUpdate"
+                    @completed="onRunCompleted" />
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         </aside>
 
@@ -164,7 +181,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { ChevronDownIcon, ChevronUpIcon, MinusIcon, SquareIcon, CopyIcon, Cross1Icon } from '@radix-icons/vue'
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MinusIcon,
+  SquareIcon,
+  CopyIcon,
+  Cross1Icon
+} from '@radix-icons/vue'
 import { Events, System, Window } from '@wailsio/runtime'
 import MapEditor from './components/MapEditor.vue'
 import LogPanel from './components/LogPanel.vue'
@@ -187,6 +213,7 @@ const isMacOS = ref(System.IsMac() || navigator.userAgent.includes('Mac OS X'))
 const showDeveloperModeAlert = ref(false)
 const developerModeAlertMessage = ref('')
 const isMaximized = ref(false)
+const isSidebarCollapsed = ref(false)
 
 function onPositionUpdate(pos: { lat: number; lon: number }) {
   currentPosition.value = pos
@@ -228,7 +255,7 @@ async function quitApp() {
 }
 
 onMounted(() => {
-  isMacOS.value = System.IsMac() || navigator.userAgent.includes('Mac OS X');
+  isMacOS.value = System.IsMac() || navigator.userAgent.includes('Mac OS X')
   const routesStore = useRoutesStore()
   // 加载上次路线
   const lastRoute = routesStore.getLastRoute()
@@ -245,7 +272,7 @@ onMounted(() => {
     showCloseDialog.value = true
   })
 
-  offDeveloperModeAlert = Events.On('developer-mode-menu-revealed', (event) => {
+  offDeveloperModeAlert = Events.On('developer-mode-menu-revealed', event => {
     developerModeAlertMessage.value = event.data
     showDeveloperModeAlert.value = true
   })
@@ -267,6 +294,11 @@ onUnmounted(() => {
 </script>
 
 <style>
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

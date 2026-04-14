@@ -1,35 +1,51 @@
 <template>
-  <Card class="flex flex-col bg-card border-border shadow-sm overflow-hidden text-foreground">
-    <div class="flex items-center justify-between p-5 border-b border-border/40">
+  <Card
+    class="flex flex-col bg-card/90 border-border/60 shadow-xl shadow-black/5 overflow-hidden text-foreground ring-1 ring-white/5">
+    <div class="relative flex items-center justify-between p-5 border-b border-border/40 bg-card/95">
       <div class="flex items-center gap-3">
-        <div class="p-1.5 rounded-lg bg-primary/10">
+        <div class="p-2 rounded-2xl bg-primary/10 border border-primary/15 shadow-inner shadow-primary/10">
           <ActivityLogIcon class="w-5 h-5 text-primary" />
         </div>
-        <span class="text-xs font-black uppercase tracking-widest text-foreground/80">跑步控制</span>
+        <div class="min-w-0">
+          <span class="block text-xs font-black uppercase tracking-widest text-foreground/85">跑步控制</span>
+          <span class="block text-[10px] font-bold text-muted-foreground/55 mt-0.5">速度、偏移与循环策略</span>
+        </div>
       </div>
       <Badge :variant="isPaused ? 'warning' : isRunning ? 'default' : 'secondary'"
-        class="text-[9px] font-black px-2 py-0 h-5 border-none shadow-sm shadow-black/5">
+        class="text-[9px] font-black px-2.5 py-0 h-5 rounded-full border-none shadow-sm shadow-black/5">
         {{ statusText }}
       </Badge>
     </div>
 
-    <div class="p-6 flex flex-col gap-8">
+    <div class="p-5 flex flex-col gap-4 bg-card/70">
       <!-- 速度设置 -->
-      <div class="space-y-2">
+      <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
             class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">平均速度</label>
-          <div class="flex items-baseline gap-2">
-            <input v-model.number="speed" type="number" min="1" max="20" step="0.5" :disabled="isRunning"
+          <div class="flex items-center gap-2">
+            <input v-model.number="displaySpeed" type="number" :min="speedRange.min" :max="speedRange.max"
+              :step="speedRange.step" :disabled="isRunning"
               class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <span class="text-[10px] font-bold text-muted-foreground/40 uppercase text-right w-8">KM/H</span>
+            <Select v-model="speedUnit" :disabled="isRunning">
+              <SelectTrigger size="sm"
+                class="w-[88px] border-border/50 bg-card/80 text-[10px] font-black uppercase tracking-wider">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in speedUnitOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-        <Slider v-model="speedArray" :min="1" :max="20" :step="0.5" :disabled="isRunning" class="py-1" />
+        <Slider v-model="speedArray" :min="speedRange.min" :max="speedRange.max" :step="speedRange.step"
+          :disabled="isRunning" class="py-1" />
       </div>
 
       <!-- 速度随机波动 -->
-      <div class="space-y-2">
+      <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
             class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">波动偏差</label>
@@ -43,7 +59,7 @@
       </div>
 
       <!-- 路线偏移 -->
-      <div class="space-y-2">
+      <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
             class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">路经补正</label>
@@ -57,7 +73,7 @@
       </div>
 
       <!-- 循环圈数 -->
-      <div class="space-y-2">
+      <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
             class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">循环圈数</label>
@@ -72,22 +88,22 @@
 
       <!-- 状态信息 -->
       <div v-if="status"
-        class="grid grid-cols-3 gap-3 p-4 bg-background border border-border/40 rounded-2xl shadow-inner relative overflow-hidden animate-in fade-in scale-in-95 duration-500">
+        class="grid grid-cols-3 gap-2 p-3 bg-background/70 border border-border/40 rounded-2xl shadow-inner relative overflow-hidden animate-in fade-in scale-in-95 duration-500">
         <div
           class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent">
         </div>
-        <div class="flex flex-col items-center gap-1.5">
+        <div class="flex flex-col items-center gap-1.5 rounded-xl bg-secondary/20 py-2">
           <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Progress</span>
           <span class="text-sm font-black mono tracking-tighter">{{ status.currentIndex }}/{{ status.totalPoints
             }}</span>
         </div>
-        <div class="flex flex-col items-center gap-1.5 border-x border-border/40">
+        <div class="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-2">
           <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Distance</span>
           <span class="text-sm font-black mono tracking-tighter text-primary">{{
             formatDist(status.distance)
           }}</span>
         </div>
-        <div class="flex flex-col items-center gap-1.5">
+        <div class="flex flex-col items-center gap-1.5 rounded-xl bg-secondary/20 py-2">
           <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Time</span>
           <span class="text-sm font-black mono tracking-tighter">{{
             formatTimeValue(status.elapsedTimeMs)
@@ -96,7 +112,7 @@
       </div>
 
       <!-- 控制按钮 -->
-      <div class="flex gap-3">
+      <div class="flex gap-3 pt-1">
         <Tooltip v-if="!isRunning && !isPaused">
           <TooltipTrigger asChild>
             <Button
@@ -161,7 +177,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+
+type SpeedUnit = 'km/h' | 'm/s' | 'mph'
 
 interface RunningStatus {
   state: 'idle' | 'running' | 'paused'
@@ -192,6 +211,11 @@ const speed = computed({
   set: val => paramsStore.setParams({ speed: val })
 })
 
+const speedUnit = computed({
+  get: () => paramsStore.params.speedUnit,
+  set: val => paramsStore.setParams({ speedUnit: val as SpeedUnit })
+})
+
 const speedVariance = computed({
   get: () => paramsStore.params.speedVariance,
   set: val => paramsStore.setParams({ speedVariance: val })
@@ -209,9 +233,56 @@ const loopCount = computed({
 
 const status = ref<RunningStatus | null>(null)
 
+const speedUnitOptions: Array<{ value: SpeedUnit; label: string }> = [
+  { value: 'km/h', label: 'km/h' },
+  { value: 'm/s', label: 'm/s' },
+  { value: 'mph', label: 'mph' }
+]
+
+const SPEED_RANGES: Record<SpeedUnit, { min: number; max: number; step: number }> = {
+  'km/h': { min: 1, max: 20, step: 0.5 },
+  'm/s': { min: 0.5, max: 5.5, step: 0.1 },
+  mph: { min: 0.5, max: 12.5, step: 0.5 }
+}
+
+const speedRange = computed(() => SPEED_RANGES[speedUnit.value])
+
+function convertFromKMH(value: number, unit: SpeedUnit) {
+  if (unit === 'm/s') return value / 3.6
+  if (unit === 'mph') return value / 1.609344
+  return value
+}
+
+function convertToKMH(value: number, unit: SpeedUnit) {
+  if (unit === 'm/s') return value * 3.6
+  if (unit === 'mph') return value * 1.609344
+  return value
+}
+
+function roundToStep(value: number, step: number) {
+  const rounded = Math.round(value / step) * step
+  return Number(rounded.toFixed(2))
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
+const displaySpeed = computed({
+  get: () => roundToStep(convertFromKMH(speed.value, speedUnit.value), speedRange.value.step),
+  set: val => {
+    const normalized = clamp(
+      Number.isFinite(val) ? val : speedRange.value.min,
+      speedRange.value.min,
+      speedRange.value.max
+    )
+    speed.value = Number(convertToKMH(normalized, speedUnit.value).toFixed(2))
+  }
+})
+
 const speedArray = computed({
-  get: () => [speed.value],
-  set: val => (speed.value = val[0])
+  get: () => [displaySpeed.value],
+  set: val => (displaySpeed.value = val[0])
 })
 const speedVarianceArray = computed({
   get: () => [speedVariance.value],
@@ -336,10 +407,10 @@ watch(speed, async newSpeed => {
 })
 
 // 监听波动偏差变化
-watch(speedVariance, () => {})
+watch(speedVariance, () => { })
 
 // 监听路线补正变化
-watch(routeOffset, () => {})
+watch(routeOffset, () => { })
 
 // 监听圈数变化
 watch(loopCount, async newLoopCount => {
