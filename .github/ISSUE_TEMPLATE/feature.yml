@@ -1,0 +1,20 @@
+name: 功能请求
+title: '[Feature] 请填写简短易读的标题'
+description: '请求开发新的功能/优化某项功能'
+assignees: GH4NG
+labels:
+    - 'enhancement'
+body:
+    - type: textarea
+      id: description
+      validations:
+          required: true
+      attributes:
+          label: 功能描述
+          description: 请填写功能描述，如果你有多个建议、请求，请分开提交Issue
+
+    - type: textarea
+      id: note
+      attributes:
+          label: 备注
+          description: 其他信息

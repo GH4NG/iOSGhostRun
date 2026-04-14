@@ -1,0 +1,34 @@
+name: BUG报告
+title: '[BUG] 请填写简短易读的标题'
+description: '使用过程中遇到了BUG'
+assignees: GH4NG
+labels:
+    - 'bug'
+body:
+    - type: textarea
+      id: description
+      validations:
+          required: true
+      attributes:
+          label: BUG内容
+          description: 请详细描述你遇到的问题
+
+    - type: textarea
+      id: screenshots
+      attributes:
+          label: 截图或视频
+          description: 请上传BUG截图、或视频
+
+    - type: textarea
+      id: logs
+      attributes:
+          label: 日志
+          description: 请上传日志文件
+          placeholder: |
+              可以在[其他设置]-[开启日志记录]后获取日志文件
+
+    - type: textarea
+      id: note
+      attributes:
+          label: 备注
+          description: 其他信息
