@@ -272,6 +272,7 @@ func (r *RunningService) runLoop(ctx context.Context) {
 	currentLoop := 1
 	var totalDistanceKM float64
 	lastLogTime := time.Now()
+	lastStepTime := time.Now()
 	progress := 0.0
 
 	var offsetLat, offsetLon float64
@@ -282,6 +283,10 @@ func (r *RunningService) runLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			now := time.Now()
+			stepDuration := now.Sub(lastStepTime)
+			lastStepTime = now
+
 			r.mu.Lock()
 			state := r.state
 			route := r.route
@@ -297,6 +302,7 @@ func (r *RunningService) runLoop(ctx context.Context) {
 			r.mu.Unlock()
 
 			if state == StatePaused {
+				lastStepTime = time.Now()
 				continue
 			}
 
@@ -345,9 +351,9 @@ func (r *RunningService) runLoop(ctx context.Context) {
 				}
 			}
 
-			// 速度 km/h 转换为 km/ms，然后计算这个时间间隔内移动的距离
+			// 按真实经过时间推进，避免设备位置注入耗时导致实际速度偏慢。
 			speedKMMS := currentSpeed / (3600 * 1000)
-			remainingMoveKM := speedKMMS * float64(interval.Milliseconds())
+			remainingMoveKM := speedKMMS * float64(stepDuration.Milliseconds())
 
 			// 按距离推进进度，避免重复累计导致距离异常
 			for remainingMoveKM > 0 {
