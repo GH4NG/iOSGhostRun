@@ -3,7 +3,7 @@
         "target": "ESNext",
         "useDefineForClassFields": true,
         "module": "ESNext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "strict": true,
         "noUnusedParameters": false,
         "noImplicitAny": false,
@@ -15,9 +15,8 @@
         "lib": ["ESNext", "DOM"],
         "skipLibCheck": true,
         "noEmit": true,
-        "baseUrl": ".",
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": ["./src/*"]
         }
     },
     "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "bindings"]

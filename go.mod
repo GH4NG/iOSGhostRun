@@ -4,8 +4,8 @@ go 1.26
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/danielpaulus/go-ios v1.0.207
-	github.com/wailsapp/wails/v3 v3.0.0-alpha.74
+	github.com/danielpaulus/go-ios v1.0.209
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.76
 	howett.net/plist v1.0.2-0.20250314012144-ee69052608d9
 )
 
@@ -55,6 +55,8 @@ require (
 	github.com/skeema/knownhosts v1.3.2 // indirect
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8 // indirect
 	github.com/tadglines/go-pkgs v0.0.0-20210623144937-b983b20f54f9 // indirect
+	github.com/vishvananda/netlink v1.3.1 // indirect
+	github.com/vishvananda/netns v0.0.5 // indirect
 	github.com/wailsapp/go-webview2 v1.0.23 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
