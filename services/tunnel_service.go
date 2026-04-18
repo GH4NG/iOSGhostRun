@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -28,13 +29,22 @@ func StartTunnel(ctx context.Context) error {
 		return err
 	}
 
-	userspaceTUN := ios.CheckRoot() != nil
+	userspaceTUN := tunnel.CheckPermissions() != nil
 	tm := tunnel.NewTunnelManager(pm, userspaceTUN)
 	tunnelCtx, cancelTunnel := context.WithCancel(ctx)
+
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", defaultTunnelInfoPort))
+	if err != nil {
+		cancelTunnel()
+		tm.Close()
+		return fmt.Errorf("启动 tunnel HTTP 服务失败: %w", err)
+	}
 
 	tunnelStateMu.Lock()
 	if globalTunnelManager != nil {
 		tunnelStateMu.Unlock()
+		_ = listener.Close()
+		tm.Close()
 		cancelTunnel()
 		return nil
 	}
@@ -66,7 +76,7 @@ func StartTunnel(ctx context.Context) error {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(tunnels)
+		_ = json.NewEncoder(w).Encode(tunnels)
 	})
 
 	// 获取指定设备的隧道
@@ -84,7 +94,7 @@ func StartTunnel(ctx context.Context) error {
 		for _, tinfo := range tunnels {
 			if tinfo.Udid == udid {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(tinfo)
+				_ = json.NewEncoder(w).Encode(tinfo)
 				return
 			}
 		}
@@ -103,7 +113,7 @@ func StartTunnel(ctx context.Context) error {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(tunnels)
+		_ = json.NewEncoder(w).Encode(tunnels)
 	})
 
 	server := &http.Server{
@@ -112,7 +122,7 @@ func StartTunnel(ctx context.Context) error {
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			Log.Error("TunnelService", "隧道 HTTP 服务器错误: "+err.Error())
 		}
 	}()
@@ -121,7 +131,8 @@ func StartTunnel(ctx context.Context) error {
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	server.Shutdown(shutdownCtx)
+	_ = server.Shutdown(shutdownCtx)
+	_ = listener.Close()
 	tm.Close()
 
 	tunnelStateMu.Lock()

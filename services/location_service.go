@@ -30,7 +30,7 @@ func (l *LocationService) SetLocation(udid string, lat, lon float64) error {
 		l.locationServers = make(map[string]*instruments.LocationSimulationService)
 	}
 
-	// iOS 17+ 需要通过 tunnel 设备对象连接 dtservicehub。
+	// iOS 17+ 需要通过 tunnel 设备对象连接 dtservicehub
 	if IsVersionAbove17(udid) {
 		device, err := getTunnelDevice(udid)
 		if err != nil {
@@ -50,8 +50,7 @@ func (l *LocationService) SetLocation(udid string, lat, lon float64) error {
 		}
 
 		// 使用已存在的服务多次定位
-		err = server.StartSimulateLocation(lat, lon)
-		if err != nil {
+		if err := server.StartSimulateLocation(lat, lon); err != nil {
 			return fmt.Errorf("启动位置模拟失败: %w", err)
 		}
 
