@@ -21,7 +21,7 @@ tasks:
         vars:
             BUILD_FLAGS: '{{if eq .DEV "true"}}-buildvcs=false -gcflags=all="-l"{{else}}-tags production -trimpath -buildvcs=false -ldflags="-w -s"{{end}}'
             ARCH: '{{.ARCH | default ARCH}}'
-            DEFAULT_OUTPUT: '{{.BIN_DIR}}/{{.APP_NAME}}'
+            DEFAULT_OUTPUT: '{{.BIN_DIR}}/{{.APP_NAME}}-{{.ARCH | default ARCH}}'
             OUTPUT: '{{ .OUTPUT | default .DEFAULT_OUTPUT }}'
         env:
             GOOS: linux
@@ -48,7 +48,7 @@ tasks:
         vars:
             ARCH: '{{.ARCH | default ARCH}}'
             APP_NAME: '{{.APP_NAME}}'
-            APP_BINARY: '../../../bin/{{.APP_NAME}}'
+            APP_BINARY: '../../../bin/{{.APP_NAME}}-{{.ARCH | default ARCH}}'
             ICON: '{{.APP_NAME}}.png'
             DESKTOP_FILE: '../{{.APP_NAME}}.desktop'
             OUTPUT_DIR: '../../../bin'
