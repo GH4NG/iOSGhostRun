@@ -24,8 +24,8 @@ func init() {
 	// and provide a strongly typed JS/TS API for them.
 	application.RegisterEvent[string]("time")
 	application.RegisterEvent[string]("developer-mode-menu-revealed")
-	application.RegisterEvent[any]("app:close-requested")
-	application.RegisterEvent[any]("app:close-quit")
+	application.RegisterEvent[application.Void]("app:close-requested")
+	application.RegisterEvent[application.Void]("app:close-quit")
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,

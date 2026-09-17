@@ -23,7 +23,7 @@
 
 ### 环境要求
 
-- [Golang](https://go.dev) 1.25+
+- [Golang](https://go.dev) 1.26+
 - [Bun](https://bun.sh/)
 - [Wails v3](https://v3.wails.io/getting-started/installation/)
 
