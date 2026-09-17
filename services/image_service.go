@@ -63,9 +63,9 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 		return fmt.Errorf("解析系统版本失败: %w", err)
 	}
 
-	imagePath, err := downloadPersonalizedImage(ResolveAppDir("devimages"))
+	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
 	if err != nil {
-		return fmt.Errorf("下载开发者镜像失败: %w", err)
+		return fmt.Errorf("获取开发者镜像失败: %w", err)
 	}
 
 	pm, err := imagemounter.NewPersonalizedDeveloperDiskImageMounter(device, ver)
@@ -89,14 +89,9 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 
 // mountDeveloperImage 挂载开发者镜像
 func mountDeveloperImage(device ios.DeviceEntry) error {
-	vals, err := ios.GetValues(device)
+	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
 	if err != nil {
-		return fmt.Errorf("获取设备信息失败: %w", err)
-	}
-
-	imagePath, err := downloadDeveloperImage(ResolveAppDir("devimages"), vals.Value.ProductVersion)
-	if err != nil {
-		return fmt.Errorf("准备开发者镜像失败: %w", err)
+		return fmt.Errorf("获取开发者镜像失败: %w", err)
 	}
 
 	if err := imagemounter.MountImage(device, imagePath); err != nil {
