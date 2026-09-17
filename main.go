@@ -24,6 +24,8 @@ func init() {
 	// and provide a strongly typed JS/TS API for them.
 	application.RegisterEvent[string]("time")
 	application.RegisterEvent[string]("developer-mode-menu-revealed")
+	application.RegisterEvent[any]("app:close-requested")
+	application.RegisterEvent[any]("app:close-quit")
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
@@ -43,10 +45,22 @@ func main() {
 	locationSvc := services.NewLocationService()
 	runningSvc := services.NewRunningService(locationSvc)
 
+	var window *application.WebviewWindow
+
 	app := application.New(application.Options{
 		Name:        "iOSGhostRun",
 		Description: "iOS虚拟定位跑步应用",
 		LogLevel:    slog.LevelInfo,
+		// 二次启动时唤起已有窗口
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "com.iosghostrun.app",
+			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				if window != nil {
+					window.Show()
+					window.Focus()
+				}
+			},
+		},
 		Services: []application.Service{
 			application.NewService(loggerSvc),
 			application.NewService(devicesSvc),
@@ -59,7 +73,9 @@ func main() {
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},
-		Windows: application.WindowsOptions{DisableQuitOnLastWindowClosed: false},
+		Linux: application.LinuxOptions{
+			ApplicationID: "com.iosghostrun.app",
+		},
 	})
 
 	app.SetIcon(icon)
@@ -70,7 +86,7 @@ func main() {
 	// 'Mac' options tailor the window when running on macOS.
 	// 'BackgroundColour' is the background colour of the window.
 	// 'URL' is the URL that will be loaded into the webview.
-	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
+	window = app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "iOS虚拟定位跑步",
 		Width: 800, Height: 600,
 		Frameless:        true,
