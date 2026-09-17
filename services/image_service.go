@@ -63,6 +63,8 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 		return fmt.Errorf("解析系统版本失败: %w", err)
 	}
 
+	applySystemProxy()
+
 	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
 	if err != nil {
 		return fmt.Errorf("获取开发者镜像失败: %w", err)
@@ -89,6 +91,9 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 
 // mountDeveloperImage 挂载开发者镜像
 func mountDeveloperImage(device ios.DeviceEntry) error {
+
+	applySystemProxy()
+
 	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
 	if err != nil {
 		return fmt.Errorf("获取开发者镜像失败: %w", err)
