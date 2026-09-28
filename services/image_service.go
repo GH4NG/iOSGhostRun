@@ -8,12 +8,11 @@ import (
 	"github.com/danielpaulus/go-ios/ios"
 	"github.com/danielpaulus/go-ios/ios/amfi"
 	"github.com/danielpaulus/go-ios/ios/imagemounter"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // MountImage 挂载镜像
 func MountImage(udid string) error {
-	device, _, err := GetDeviceAndVersion(udid)
+	device, version, err := GetDeviceAndVersion(udid)
 	if err != nil {
 		return err
 	}
@@ -26,17 +25,19 @@ func MountImage(udid string) error {
 			if strings.Contains(err.Error(), "Developer Mode menu has been revealed in Settings") {
 				msg := "开发者模式菜单已显示，请在 设置 → 隐私与安全性 中启用开发者模式，然后重试"
 				Log.Info("ImageService", msg)
-				application.Get().Event.Emit("developer-mode-menu-revealed", msg)
+				emitAppEvent("developer-mode-menu-revealed", msg)
 				return fmt.Errorf("%s", msg)
 			}
 			Log.Error("ImageService", fmt.Sprintf("启用开发者模式失败: %v", err))
 			return err
 		}
-		Log.Info("ImageService", "已请求启用开发者模式，请在设备上确认并重试挂载")
-		return nil
+		msg := "已请求启用开发者模式，请在设备上确认并重试挂载"
+		Log.Info("ImageService", msg)
+		emitAppEvent("developer-mode-menu-revealed", msg)
+		return fmt.Errorf("%s", msg)
 	}
 
-	if IsVersionAbove17(udid) {
+	if version.Major() >= 17 {
 		tunnelDevice, err := getTunnelDevice(udid)
 		if err != nil {
 			return fmt.Errorf("获取隧道设备失败: %w", err)
@@ -63,13 +64,6 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 		return fmt.Errorf("解析系统版本失败: %w", err)
 	}
 
-	applySystemProxy()
-
-	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
-	if err != nil {
-		return fmt.Errorf("获取开发者镜像失败: %w", err)
-	}
-
 	pm, err := imagemounter.NewPersonalizedDeveloperDiskImageMounter(device, ver)
 	if err != nil {
 		return fmt.Errorf("创建 personalized mounter 失败: %w", err)
@@ -79,6 +73,11 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 	if sigs, err := pm.ListImages(); err == nil && len(sigs) > 0 {
 		Log.Info("ImageService", "开发者镜像已挂载 (personalized)，跳过")
 		return nil
+	}
+	applySystemProxy()
+	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
+	if err != nil {
+		return fmt.Errorf("获取开发者镜像失败: %w", err)
 	}
 
 	if err := pm.MountImage(imagePath); err != nil {

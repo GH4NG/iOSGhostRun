@@ -12,13 +12,10 @@ import (
 type DevicesService struct {
 	mu           sync.RWMutex
 	selectedUDID string
-	deviceInfo   map[string]DeviceInfo
 }
 
 func NewDevicesService() *DevicesService {
-	return &DevicesService{
-		deviceInfo: make(map[string]DeviceInfo),
-	}
+	return &DevicesService{}
 }
 
 // ListDevices 获取可连接设备列表
@@ -72,13 +69,14 @@ func (d *DevicesService) SelectDevice(udid string) error {
 		return fmt.Errorf("udid required")
 	}
 
-	if _, err := ios.GetDevice(udid); err != nil {
+	_, version, err := GetDeviceAndVersion(udid)
+	if err != nil {
 		Log.Error("DevicesService", "选择设备 "+udid+" 失败: "+err.Error())
 		return err
 	}
 
 	// 先检测 iOS 版本
-	if IsVersionAbove17(udid) {
+	if version.Major() >= 17 {
 		// 再检测 Wintun
 		if !CheckWintunInstalled() {
 			err := fmt.Errorf("iOS 17+ 设备需要安装 Wintun")
@@ -92,13 +90,12 @@ func (d *DevicesService) SelectDevice(udid string) error {
 		}
 	}
 
-	d.mu.Lock()
-	d.selectedUDID = udid
-	d.mu.Unlock()
-
 	if err := MountImage(udid); err != nil {
 		return err
 	}
+	d.mu.Lock()
+	d.selectedUDID = udid
+	d.mu.Unlock()
 
 	Log.Info("DevicesService", fmt.Sprintf("挂载开发者镜像完成: %s", udid))
 	return nil
@@ -113,10 +110,6 @@ func (d *DevicesService) GetSelectedDevice() (*DeviceInfo, error) {
 		return nil, fmt.Errorf("未选择设备")
 	}
 
-	if info, ok := d.deviceInfo[udid]; ok {
-		d.mu.RUnlock()
-		return &info, nil
-	}
 	d.mu.RUnlock()
 
 	info, err := GetDeviceInfo(udid)

@@ -109,6 +109,7 @@ async function refreshDevices() {
     // 如果当前选中的设备不在列表中，清除选择
     if (!devices.value.find(d => d.UDID === selectedUdid.value)) {
       selectedUdid.value = ''
+      imageMounted.value = false
       emit('update:modelValue', '')
     }
 
@@ -140,6 +141,7 @@ async function selectDevice(device: ServiceDeviceInfo) {
   try {
     await DevicesService.SelectDevice(device.UDID)
     selectedUdid.value = device.UDID
+    imageMounted.value = true
     emit('update:modelValue', device.UDID)
     showSuccess(`已选择设备: ${device.DeviceName || '未知设备'}`)
   } catch (e) {
