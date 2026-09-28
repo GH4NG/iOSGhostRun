@@ -55,11 +55,22 @@
                 isDrawingMode
                   ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90 scale-110 shadow-primary/30'
                   : 'text-muted-foreground hover:bg-accent'
-              ]" :disabled="disabled" @click="isDrawingMode = !isDrawingMode">
+              ]" :disabled="disabled" :aria-label="isDrawingMode ? '停止绘制' : '开启路径绘制模式'"
+              :aria-pressed="isDrawingMode" @click="isDrawingMode = !isDrawingMode">
               <Pencil1Icon class="w-6 h-6" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="left">{{ isDrawingMode ? '停止绘制' : '开启路径绘制模式' }}</TooltipContent>
+        </Tooltip>
+        <Tooltip v-if="isDrawingMode">
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" aria-label="撤回上一步" :disabled="!canUndo"
+              class="h-10 w-10 shadow-2xl border-border/30 bg-card/85 backdrop-blur-md ring-1 ring-white/10 text-muted-foreground hover:bg-accent transition-all duration-300"
+              @click="undoLastPoint">
+              <ResetIcon class="w-6 h-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">撤回上一步</TooltipContent>
         </Tooltip>
       </div>
     </div>
@@ -175,7 +186,8 @@ import {
   ChevronUpIcon,
   LayersIcon,
   GlobeIcon as Globe,
-  Pencil1Icon
+  Pencil1Icon,
+  ResetIcon
 } from '@radix-icons/vue'
 import Map from 'ol/Map'
 import View from 'ol/View'
@@ -264,6 +276,13 @@ const routePoints = computed<RoutePoint[]>({
     emit('update:modelValue', v)
   }
 })
+
+const canUndo = computed(() => isDrawingMode.value && !props.disabled && routePoints.value.length > 0)
+
+function undoLastPoint() {
+  if (!canUndo.value) return
+  routePoints.value = routePoints.value.slice(0, -1)
+}
 
 const formattedDistance = computed(() => {
   return formatDistance(calculateRouteDistance(routePoints.value))
@@ -403,9 +422,7 @@ onMounted(() => {
       lon: coords[0]
     }
 
-    const newPoints = [...props.modelValue, newPoint]
-    emit('update:modelValue', newPoints)
-    routesStore.saveLastRoute(newPoints)
+    routePoints.value = [...routePoints.value, newPoint]
   })
 
   updateRouteDisplay()
@@ -444,9 +461,7 @@ watch(
   newPoints => {
     updateRouteDisplay()
     // 保存上次路线
-    if (newPoints && newPoints.length > 0) {
-      routesStore.saveLastRoute(newPoints)
-    }
+    routesStore.saveLastRoute(newPoints)
   },
   { deep: true }
 )
