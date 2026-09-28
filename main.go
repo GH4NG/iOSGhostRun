@@ -19,26 +19,17 @@ var assets embed.FS
 var icon []byte
 
 func init() {
-	// Register a custom event whose associated data type is string.
-	// This is not required, but the binding generator will pick up registered events
-	// and provide a strongly typed JS/TS API for them.
-	application.RegisterEvent[string]("time")
+	// 注册事件数据类型，让 Wails 生成对应的 TypeScript 绑定。
+	application.RegisterEvent[services.RunningStatus]("running:position")
+	application.RegisterEvent[services.RunningStatus]("running:completed")
+	application.RegisterEvent[string]("running:error")
+	application.RegisterEvent[services.LogEntry]("log-event")
 	application.RegisterEvent[string]("developer-mode-menu-revealed")
 	application.RegisterEvent[application.Void]("app:close-requested")
 	application.RegisterEvent[application.Void]("app:close-quit")
 }
 
-// main function serves as the application's entry point. It initializes the application, creates a window,
-// and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
-// logs any error that might occur.
 func main() {
-
-	// Create a new Wails application by providing the necessary options.
-	// Variables 'Name' and 'Description' are for application metadata.
-	// 'Assets' configures the asset server with the 'FS' variable pointing to the frontend files.
-	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
-	// 'Mac' options tailor the application when running an macOS.
-
 	// 创建服务实例
 	loggerSvc := services.NewLoggerService()
 	devicesSvc := services.NewDevicesService()

@@ -73,16 +73,10 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { TrashIcon, CopyIcon } from '@radix-icons/vue'
 import { Events } from '@wailsio/runtime'
 import { LoggerService } from '../../bindings/iOSGhostRun/services'
+import type { LogEntry } from '../../bindings/iOSGhostRun/services/models'
 import { useNotification } from '../composables/useNotification'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-
-interface LogEntry {
-  level: string
-  module: string
-  message: string
-  time: string
-}
 
 const logs = ref<LogEntry[]>([])
 const filterLevel = ref('all')

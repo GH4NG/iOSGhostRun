@@ -170,6 +170,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { ActivityLogIcon, PlayIcon, PauseIcon, StopIcon } from '@radix-icons/vue'
 import { Events } from '@wailsio/runtime'
 import { RunningService } from '../../bindings/iOSGhostRun/services'
+import type { RunningStatus } from '../../bindings/iOSGhostRun/services/models'
 import { formatDistance, formatTime, type RoutePoint } from '../lib/routeUtils'
 import { useNotification } from '../composables/useNotification'
 import { useRunningParamsStore } from '../stores/runningParams'
@@ -181,17 +182,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 type SpeedUnit = 'km/h' | 'm/s' | 'mph'
-
-interface RunningStatus {
-  state: 'idle' | 'running' | 'paused'
-  currentIndex: number
-  totalPoints: number
-  currentLat: number
-  currentLon: number
-  speed: number
-  distance: number
-  elapsedTimeMs: number
-}
 
 const props = defineProps<{
   udid: string
