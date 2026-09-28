@@ -79,7 +79,7 @@
             </div>
           </div>
 
-          <div v-else class="h-full flex flex-col min-h-0">
+          <div v-show="!isSidebarCollapsed" class="h-full flex flex-col min-h-0">
             <div class="flex items-center justify-between px-4 pt-4 pb-2">
               <div class="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground/55">
                 控制面板
@@ -96,7 +96,7 @@
                 <div class="flex flex-col gap-5 pt-2">
                   <DevicePanel v-model="selectedUdid" />
                   <RunningControl :udid="selectedUdid" :route-points="routePoints" @position-update="onPositionUpdate"
-                    @completed="onRunCompleted" />
+                    @state-change="onRunStateChange" />
                 </div>
               </ScrollArea>
             </div>
@@ -192,6 +192,7 @@ import {
   Cross1Icon
 } from '@radix-icons/vue'
 import { Events, System, Window } from '@wailsio/runtime'
+import type { RunningState } from '../bindings/iOSGhostRun/services/models'
 import MapEditor from './components/MapEditor.vue'
 import LogPanel from './components/LogPanel.vue'
 import DevicePanel from './components/DevicePanel.vue'
@@ -214,10 +215,8 @@ const showDeveloperModeAlert = ref(false)
 const developerModeAlertMessage = ref('')
 const isMaximized = ref(false)
 const isSidebarCollapsed = ref(false)
-
 function onPositionUpdate(pos: { lat: number; lon: number }) {
   currentPosition.value = pos
-  isRunning.value = true
 }
 
 function onLocatingPoint(point: RoutePoint) {
@@ -226,9 +225,11 @@ function onLocatingPoint(point: RoutePoint) {
   }
 }
 
-function onRunCompleted() {
-  isRunning.value = false
-  currentPosition.value = null
+function onRunStateChange(state: RunningState) {
+  isRunning.value = state === 'running' || state === 'paused'
+  if (!isRunning.value) {
+    currentPosition.value = null
+  }
 }
 
 async function onMinimise() {

@@ -55,7 +55,7 @@
                 isDrawingMode
                   ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90 scale-110 shadow-primary/30'
                   : 'text-muted-foreground hover:bg-accent'
-              ]" @click="isDrawingMode = !isDrawingMode">
+              ]" :disabled="disabled" @click="isDrawingMode = !isDrawingMode">
               <Pencil1Icon class="w-6 h-6" />
             </Button>
           </TooltipTrigger>

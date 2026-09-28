@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
-
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // Point 路线点
@@ -41,8 +40,14 @@ type RunningStatus struct {
 	CurrentLoop   int          `json:"currentLoop"` // 当前圈数
 }
 
+type locationProvider interface {
+	SetLocation(udid string, lat, lon float64) error
+	ResetLocation(udid string) error
+}
+
 // RunningService 跑步模拟服务
 type RunningService struct {
+	lifecycleMu     sync.Mutex
 	mu              sync.Mutex
 	runWG           sync.WaitGroup
 	state           RunningState
@@ -56,9 +61,10 @@ type RunningService struct {
 	updateInterval  time.Duration // 位置更新间隔
 	udid            string
 	cancel          context.CancelFunc
-	locationService *LocationService
+	locationService locationProvider
 	distance        float64
 	startTime       time.Time
+	endTime         time.Time
 	pausedDuration  time.Duration
 	lastPauseTime   time.Time
 	progress        float64 // 当前段内的进度 0-1
@@ -68,7 +74,7 @@ type RunningService struct {
 // NewRunningService 创建跑步服务
 func NewRunningService(locationService *LocationService) *RunningService {
 	if locationService == nil {
-		locationService = &LocationService{}
+		locationService = NewLocationService()
 	}
 
 	return &RunningService{
@@ -85,20 +91,37 @@ func NewRunningService(locationService *LocationService) *RunningService {
 
 // StartRun 开始跑步
 func (r *RunningService) StartRun(udid string, route []Point, speed float64) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.lifecycleMu.Lock()
+	defer r.lifecycleMu.Unlock()
 
-	if r.state == StateRunning {
-		return nil
+	if strings.TrimSpace(udid) == "" {
+		return fmt.Errorf("未选择设备")
 	}
 
 	if len(route) < 2 {
 		return fmt.Errorf("路线点数量不足，至少需要 2 个点")
 	}
 
-	if speed <= 0 {
+	if speed <= 0 || math.IsNaN(speed) || math.IsInf(speed, 0) {
 		return fmt.Errorf("速度必须大于 0")
 	}
+	for i, point := range route {
+		if math.IsNaN(point.Lat) || math.IsInf(point.Lat, 0) || math.IsNaN(point.Lon) || math.IsInf(point.Lon, 0) ||
+			point.Lat < -90 || point.Lat > 90 || point.Lon < -180 || point.Lon > 180 {
+			return fmt.Errorf("第 %d 个路线点的经纬度无效", i+1)
+		}
+	}
+
+	r.mu.Lock()
+	if r.state != StateIdle {
+		r.mu.Unlock()
+		return fmt.Errorf("已有跑步任务，请先停止当前任务")
+	}
+	r.mu.Unlock()
+	// 完成事件发出后，仍需等上一轮的定位连接释放完毕才能重新启动。
+	r.runWG.Wait()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	routeCopy := append([]Point(nil), route...)
 
@@ -113,6 +136,7 @@ func (r *RunningService) StartRun(udid string, route []Point, speed float64) err
 	r.currentLoop = 1
 	r.progress = 0
 	r.startTime = time.Now()
+	r.endTime = time.Time{}
 	r.pausedDuration = 0
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -121,6 +145,14 @@ func (r *RunningService) StartRun(udid string, route []Point, speed float64) err
 	r.runWG.Add(1)
 	go func() {
 		defer r.runWG.Done()
+		defer cancel()
+		defer func() {
+			if r.locationService != nil {
+				if err := r.locationService.ResetLocation(udid); err != nil {
+					Log.Warn("RunningService", fmt.Sprintf("重置设备位置失败: %v", err))
+				}
+			}
+		}()
 		r.runLoop(ctx)
 	}()
 
@@ -153,12 +185,18 @@ func (r *RunningService) ResumeRun() {
 
 // StopRun 停止跑步
 func (r *RunningService) StopRun() {
+	r.lifecycleMu.Lock()
+	defer r.lifecycleMu.Unlock()
 	r.mu.Lock()
 	Log.Info("RunningService", "停止跑步")
 	cancel := r.cancel
 	r.cancel = nil
-	udid := r.udid
-	locationSvc := r.locationService
+	if r.state != StateIdle {
+		r.endTime = time.Now()
+		if r.state == StatePaused {
+			r.pausedDuration += r.endTime.Sub(r.lastPauseTime)
+		}
+	}
 	r.state = StateIdle
 	r.currentIndex = 0
 	r.progress = 0
@@ -172,17 +210,13 @@ func (r *RunningService) StopRun() {
 
 	// 等待 runLoop 完全退出
 	r.runWG.Wait()
-
-	if udid != "" && locationSvc != nil {
-		_ = locationSvc.ResetLocation(udid)
-	}
 }
 
 // SetSpeed 设置速度
 func (r *RunningService) SetSpeed(speed float64) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if speed <= 0 {
+	if speed <= 0 || math.IsNaN(speed) || math.IsInf(speed, 0) {
 		return
 	}
 	r.speed = speed
@@ -193,10 +227,10 @@ func (r *RunningService) SetSpeed(speed float64) {
 func (r *RunningService) SetRandomization(speedVariance, routeOffset float64) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if speedVariance < 0 {
+	if speedVariance < 0 || math.IsNaN(speedVariance) || math.IsInf(speedVariance, 0) {
 		speedVariance = 0
 	}
-	if routeOffset < 0 {
+	if routeOffset < 0 || math.IsNaN(routeOffset) || math.IsInf(routeOffset, 0) {
 		routeOffset = 0
 	}
 	r.speedVariance = speedVariance
@@ -232,8 +266,12 @@ func (r *RunningService) GetStatus() RunningStatus {
 	}
 
 	var elapsed time.Duration
-	if r.state != StateIdle {
-		elapsed = time.Since(r.startTime) - r.pausedDuration
+	if !r.startTime.IsZero() {
+		end := time.Now()
+		if !r.endTime.IsZero() {
+			end = r.endTime
+		}
+		elapsed = end.Sub(r.startTime) - r.pausedDuration
 		if r.state == StatePaused {
 			elapsed -= time.Since(r.lastPauseTime)
 		}
@@ -314,8 +352,9 @@ func (r *RunningService) runLoop(ctx context.Context) {
 				Log.Error("RunningService", "路线点不足，终止跑步")
 				r.mu.Lock()
 				r.state = StateIdle
+				r.endTime = time.Now()
 				r.mu.Unlock()
-				application.Get().Event.Emit("running:error", "路线点不足，至少需要 2 个点")
+				emitAppEvent("running:error", "路线点不足，至少需要 2 个点")
 				return
 			}
 
@@ -324,13 +363,14 @@ func (r *RunningService) runLoop(ctx context.Context) {
 				if loopCount > 0 && currentLoop >= loopCount {
 					r.mu.Lock()
 					r.state = StateIdle
+					r.endTime = time.Now()
 					r.distance = totalDistanceKM
 					r.currentLoop = currentLoop
 					r.currentIndex = len(route) - 1
 					r.progress = 1
 					r.mu.Unlock()
 					Log.Info("RunningService", fmt.Sprintf("跑步完成！总距离: %.0fm, 圈数: %d", totalDistanceKM*1000, currentLoop))
-					application.Get().Event.Emit("running:completed", r.GetStatus())
+					emitAppEvent("running:completed", r.GetStatus())
 					return
 				}
 				// 开始新的循环
@@ -431,12 +471,21 @@ func (r *RunningService) runLoop(ctx context.Context) {
 				err := locationSvc.SetLocation(udid, currentPoint.Lat, currentPoint.Lon)
 				if err != nil {
 					Log.Error("RunningService", fmt.Sprintf("设置位置失败: %v", err))
-					application.Get().Event.Emit("running:error", err.Error())
+					r.mu.Lock()
+					r.state = StateIdle
+					r.endTime = time.Now()
+					r.mu.Unlock()
+					emitAppEvent("running:error", err.Error())
+					return
 				}
 			}
 
 			// 更新统计信息
 			r.mu.Lock()
+			if r.state != StateRunning || ctx.Err() != nil {
+				r.mu.Unlock()
+				continue
+			}
 			r.currentIndex = pointIndex
 			r.currentLoop = currentLoop
 			r.distance = totalDistanceKM
@@ -453,7 +502,7 @@ func (r *RunningService) runLoop(ctx context.Context) {
 				}
 			}
 
-			application.Get().Event.Emit("running:position", RunningStatus{
+			emitAppEvent("running:position", RunningStatus{
 				State:         state,
 				CurrentLat:    currentPoint.Lat,
 				CurrentLon:    currentPoint.Lon,

@@ -190,6 +190,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'position-update': [pos: { lat: number; lon: number }]
+  'state-change': [state: RunningStatus['state']]
   completed: []
 }>()
 
@@ -222,6 +223,17 @@ const loopCount = computed({
 })
 
 const status = ref<RunningStatus | null>(null)
+let statusRevision = 0
+let disposed = false
+let statusInterval: ReturnType<typeof setInterval> | null = null
+let offPosition: (() => void) | null = null
+let offCompleted: (() => void) | null = null
+let offError: (() => void) | null = null
+
+function applyStatus(data: RunningStatus) {
+  statusRevision++
+  status.value = data
+}
 
 const speedUnitOptions: Array<{ value: SpeedUnit; label: string }> = [
   { value: 'km/h', label: 'km/h' },
@@ -291,6 +303,14 @@ const isRunning = computed(() => status.value?.state === 'running')
 const isPaused = computed(() => status.value?.state === 'paused')
 const canStart = computed(() => props.udid && props.routePoints.length >= 2)
 
+watch(
+  () => status.value?.state,
+  state => {
+    if (state) emit('state-change', state)
+  },
+  { immediate: true }
+)
+
 const statusText = computed(() => {
   if (isRunning.value) return '运行中'
   if (isPaused.value) return '已暂停'
@@ -349,10 +369,14 @@ async function stopRun() {
 }
 
 async function updateStatus() {
+  const revision = ++statusRevision
   try {
-    status.value = (await RunningService.GetStatus()) as RunningStatus
+    const data = await RunningService.GetStatus()
+    if (!disposed && revision === statusRevision) status.value = data
   } catch (e) {
-    showErrorDialog(`获取状态失败: ${e instanceof Error ? e.message : '未知错误'}`)
+    if (!disposed && revision === statusRevision) {
+      showErrorDialog(`获取状态失败: ${e instanceof Error ? e.message : '未知错误'}`)
+    }
   }
 }
 
@@ -360,29 +384,37 @@ onMounted(() => {
   updateStatus()
 
   // 定期更新状态
-  const statusInterval = setInterval(() => {
+  statusInterval = setInterval(() => {
     updateStatus()
   }, 500)
 
   // 监听位置更新事件
-  Events.On('running:position', (ev: any) => {
-    const data = ev.data as RunningStatus
+  offPosition = Events.On('running:position', ev => {
+    const data = ev.data
+    applyStatus(data)
     emit('position-update', { lat: data.currentLat, lon: data.currentLon })
-    status.value = data
   })
 
   // 监听完成事件
-  Events.On('running:completed', (ev: any) => {
-    status.value = ev.data as RunningStatus
+  offCompleted = Events.On('running:completed', ev => {
+    applyStatus(ev.data)
     emit('completed')
-    showSuccess(`跑步任务已完成！共运行 ${status.value.totalPoints} 个位置点`)
+    showSuccess(`跑步任务已完成！共运行 ${ev.data.totalPoints} 个位置点`)
   })
 
-  onUnmounted(() => {
-    clearInterval(statusInterval)
-    Events.Off('running:position')
-    Events.Off('running:completed')
+  offError = Events.On('running:error', ev => {
+    updateStatus()
+    showErrorDialog(`跑步任务失败: ${ev.data}`)
   })
+})
+
+onUnmounted(() => {
+  disposed = true
+  statusRevision++
+  if (statusInterval !== null) clearInterval(statusInterval)
+  offPosition?.()
+  offCompleted?.()
+  offError?.()
 })
 
 // 监听速度变化
@@ -395,12 +427,6 @@ watch(speed, async newSpeed => {
     }
   }
 })
-
-// 监听波动偏差变化
-watch(speedVariance, () => { })
-
-// 监听路线补正变化
-watch(routeOffset, () => { })
 
 // 监听圈数变化
 watch(loopCount, async newLoopCount => {
