@@ -1,7 +1,7 @@
 <template>
   <Card
-    class="flex flex-col bg-card/90 border-border/60 shadow-xl shadow-black/5 overflow-hidden text-foreground ring-1 ring-white/5">
-    <div class="relative flex items-center justify-between p-5 border-b border-border/40 bg-card/95">
+    class="flex flex-col gap-0 p-0 bg-card/90 border-border/60 shadow-xl shadow-black/5 overflow-hidden text-foreground ring-1 ring-white/5">
+    <div class="relative flex items-center justify-between gap-2 p-4 border-b border-border/40 bg-card/95">
       <div class="flex items-center gap-3">
         <div class="p-2 rounded-2xl bg-primary/10 border border-primary/15 shadow-inner shadow-primary/10">
           <ActivityLogIcon class="w-5 h-5 text-primary" />
@@ -17,7 +17,7 @@
       </Badge>
     </div>
 
-    <div class="p-5 flex flex-col gap-4 bg-card/70">
+    <div class="p-4 flex flex-col gap-4 bg-card/70">
       <!-- 速度设置 -->
       <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">

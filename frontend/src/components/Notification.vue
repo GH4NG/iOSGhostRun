@@ -1,5 +1,5 @@
 <template>
-    <div class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none">
+    <div class="fixed top-14 left-1/2 -translate-x-1/2 z-[9999] w-max max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto flex flex-col gap-2 pointer-events-none">
         <TransitionGroup enter-active-class="transition duration-300 ease-out"
             enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100"
             leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100"
@@ -8,7 +8,7 @@
                 :class="getNotificationClass(notification.type)"
                 class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-3 pointer-events-auto backdrop-blur-md border animation-all">
                 <component :is="getIcon(notification.type)" class="w-4 h-4 shrink-0" />
-                <span class="flex-1">{{ notification.message }}</span>
+                <span class="flex-1 min-w-0 break-words">{{ notification.message }}</span>
             </div>
         </TransitionGroup>
     </div>

@@ -1,11 +1,11 @@
 <template>
-  <div class="flex flex-col h-full bg-card overflow-hidden text-foreground">
-    <div class="flex justify-between items-center p-3 px-6 border-b border-border/30 bg-secondary/5">
-      <div class="flex gap-2">
+  <div class="log-panel flex flex-col h-full bg-card overflow-hidden text-foreground">
+    <div class="log-toolbar flex shrink-0 flex-wrap justify-between items-center gap-2 p-2 border-b border-border/30 bg-secondary/5">
+      <div class="log-filters flex flex-wrap gap-1">
         <Tooltip v-for="lv in levels" :key="lv">
           <TooltipTrigger asChild>
             <button
-              class="h-8 min-w-14 items-center justify-center rounded-lg text-[10px] font-black uppercase tracking-widest transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50"
+              class="log-filter h-7 min-w-10 px-2 items-center justify-center rounded-lg text-[10px] font-black uppercase tracking-widest transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50"
               :class="[
                 lv === filterLevel
                   ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
@@ -17,25 +17,25 @@
           <TooltipContent side="bottom">筛选 {{ lv.toUpperCase() }} 级别日志</TooltipContent>
         </Tooltip>
       </div>
-      <div class="flex gap-2">
+      <div class="ml-auto flex shrink-0 gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="sm"
-              class="h-8 gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20 rounded-lg px-3"
+            <Button variant="ghost" size="sm" aria-label="导出日志"
+              class="h-7 gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20 rounded-lg px-2"
               @click="exportLogs">
               <CopyIcon class="w-3.5 h-3.5" />
-              <span>Export</span>
+              <span class="log-action-label">Export</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="left">{{ copySuccess ? '已复制!' : '导出日志到粘贴板' }}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="sm"
-              class="h-8 gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all border border-transparent hover:border-destructive/20 rounded-lg px-3"
+            <Button variant="ghost" size="sm" aria-label="清空日志"
+              class="h-7 gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all border border-transparent hover:border-destructive/20 rounded-lg px-2"
               @click="clearLogs">
               <TrashIcon class="w-3.5 h-3.5" />
-              <span>Clear</span>
+              <span class="log-action-label">Clear</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="left">清除当前显示的所有日志</TooltipContent>
@@ -44,16 +44,16 @@
     </div>
 
     <div ref="logContainer"
-      class="flex-1 overflow-y-auto p-5 font-mono text-[11px] leading-relaxed no-scrollbar select-text bg-background/30 selection:bg-primary/20">
+      class="log-list flex-1 min-h-0 overflow-y-auto p-2 font-mono text-[11px] leading-relaxed select-text bg-background/30 selection:bg-primary/20">
       <div v-for="(log, index) in filteredLogs" :key="index"
-        class="group mb-1.5 py-1.5 rounded-lg px-4 transition-all border border-transparent hover:bg-secondary/20 flex gap-4 items-baseline"
+        class="group mb-1 py-1 rounded-lg px-2 transition-all border border-transparent hover:bg-secondary/20 flex gap-3 items-baseline"
         :class="getLogClass(log.level)">
         <span
-          class="text-muted-foreground/30 font-black tracking-tighter w-20 shrink-0 select-none group-hover:text-muted-foreground/60 transition-colors">
+          class="text-muted-foreground/30 font-black tracking-tighter w-16 shrink-0 select-none group-hover:text-muted-foreground/60 transition-colors">
           {{ log.time.split(' ')[1] || log.time }}
         </span>
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-3 mb-1">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-0.5">
             <span
               class="font-black uppercase tracking-[0.1em] text-[9px] opacity-80 decoration-2 decoration-primary/20">{{
               log.level }}</span>
@@ -168,6 +168,27 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.log-panel {
+  container-type: inline-size;
+}
+
+@container (max-width: 480px) {
+  .log-action-label {
+    display: none;
+  }
+
+  .log-filter {
+    min-width: 32px;
+    padding-inline: 6px;
+    font-size: 9px;
+    letter-spacing: 0.05em;
+  }
+
+  .log-list {
+    padding: 4px;
+  }
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

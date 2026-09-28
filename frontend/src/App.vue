@@ -1,7 +1,7 @@
 <template>
   <TooltipProvider>
     <div
-      class="h-screen w-screen flex flex-col bg-background text-foreground overflow-hidden font-sans selection:bg-primary/20 selection:text-primary">
+      class="h-dvh w-full flex flex-col bg-background text-foreground overflow-hidden font-sans selection:bg-primary/20 selection:text-primary">
       <!-- 通知系统 -->
       <Notification />
 
@@ -61,10 +61,12 @@
         </template>
       </header>
 
-      <div class="flex-1 flex overflow-hidden">
+      <div class="app-workspace relative flex-1 min-h-0 flex overflow-hidden" :class="{ 'is-compact': isCompactLayout }">
+        <button v-if="isCompactLayout && !isSidebarCollapsed" type="button" aria-label="关闭控制面板"
+          class="absolute inset-0 z-30 bg-black/30 backdrop-blur-[1px]" @click="isSidebarCollapsed = true"></button>
         <!-- 左侧面板 -->
         <aside
-          class="shrink-0 border-r border-border/70 bg-card/75 backdrop-blur-md overflow-hidden shadow-2xl z-20 transition-all duration-300"
+          class="app-sidebar min-h-0 shrink-0 border-r border-border/70 bg-card/95 backdrop-blur-md overflow-hidden shadow-2xl z-40 transition-[width] duration-300"
           :class="isSidebarCollapsed ? 'w-14' : 'w-80'">
           <div v-if="isSidebarCollapsed" class="h-full flex flex-col items-center py-4 px-2 gap-3">
             <TitlebarButton
@@ -80,7 +82,7 @@
           </div>
 
           <div v-show="!isSidebarCollapsed" class="h-full flex flex-col min-h-0">
-            <div class="flex items-center justify-between px-4 pt-4 pb-2">
+            <div class="shrink-0 flex items-center justify-between px-4 pt-4 pb-2">
               <div class="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground/55">
                 控制面板
               </div>
@@ -92,8 +94,8 @@
             </div>
 
             <div class="flex-1 min-h-0">
-              <ScrollArea class="h-full px-4 pb-6">
-                <div class="flex flex-col gap-5 pt-2">
+              <ScrollArea class="h-full">
+                <div class="flex flex-col gap-4 px-3 pt-2 pb-5">
                   <DevicePanel v-model="selectedUdid" />
                   <RunningControl :udid="selectedUdid" :route-points="routePoints" @position-update="onPositionUpdate"
                     @state-change="onRunStateChange" />
@@ -104,7 +106,7 @@
         </aside>
 
         <!-- 右侧区域: 地图 + 日志 -->
-        <main class="flex-1 flex flex-col min-w-0 relative bg-background">
+        <main class="app-main flex-1 flex flex-col min-w-0 min-h-0 relative bg-background">
           <!-- 地图区域 -->
           <div class="flex-1 relative min-h-0">
             <MapEditor ref="mapEditor" v-model="routePoints" :current-position="currentPosition"
@@ -113,10 +115,10 @@
 
           <!-- 日志区域 -->
           <div
-            class="bg-card/85 backdrop-blur-xl border-t border-border z-30 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] flex flex-col shadow-[0_-10px_30px_rgba(0,0,0,0.1)]"
-            :class="[isLogCollapsed ? 'h-12' : 'h-80']">
-            <div
-              class="h-12 flex items-center px-6 gap-3 cursor-pointer select-none bg-secondary/10 hover:bg-secondary/20 text-muted-foreground hover:text-foreground transition-all group border-b border-transparent"
+            class="app-log-panel min-h-0 shrink-0 bg-card/85 backdrop-blur-xl border-t border-border z-30 transition-[height] duration-300 flex flex-col shadow-[0_-10px_30px_rgba(0,0,0,0.1)]"
+            :class="{ 'is-open': !isLogCollapsed }">
+            <button type="button" :aria-expanded="!isLogCollapsed" aria-controls="log-panel-content"
+              class="h-9 shrink-0 flex items-center px-4 gap-3 cursor-pointer select-none bg-secondary/10 hover:bg-secondary/20 text-muted-foreground hover:text-foreground transition-all group border-b border-transparent"
               :class="{ 'border-border/30': !isLogCollapsed }" @click="isLogCollapsed = !isLogCollapsed">
               <div class="p-1.5 rounded-lg bg-secondary/50 group-hover:scale-110 transition-transform">
                 <ChevronDownIcon v-if="!isLogCollapsed" class="w-4 h-4" />
@@ -124,8 +126,8 @@
               </div>
               <span class="text-xs font-black uppercase tracking-[0.2em]">系统日志</span>
               <div v-if="isLogCollapsed" class="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-            </div>
-            <div v-show="!isLogCollapsed" class="flex-1 min-h-0">
+            </button>
+            <div id="log-panel-content" v-show="!isLogCollapsed" class="flex-1 min-h-0">
               <LogPanel />
             </div>
           </div>
@@ -135,12 +137,12 @@
       <div v-if="showCloseDialog" class="fixed inset-0 z-[10000] flex items-center justify-center px-6"
         style="--wails-draggable: no-drag">
         <div class="absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="showCloseDialog = false"></div>
-        <div class="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl p-6 space-y-5">
+        <div class="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl p-5 space-y-5">
           <div class="space-y-2">
             <h2 class="text-lg font-bold">关闭 iOSGhostRun</h2>
             <p class="text-sm text-muted-foreground">你希望直接退出程序，还是最小化到任务栏？</p>
           </div>
-          <div class="flex items-center justify-end gap-2">
+          <div class="flex flex-wrap items-center justify-end gap-2">
             <button class="px-4 h-9 rounded-md border border-border hover:bg-secondary/40 transition-colors"
               @click="showCloseDialog = false">
               取消
@@ -162,7 +164,7 @@
       <div v-if="showDeveloperModeAlert" class="fixed inset-0 z-[10000] flex items-center justify-center px-6"
         style="--wails-draggable: no-drag">
         <div class="absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="showDeveloperModeAlert = false"></div>
-        <div class="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl p-6 space-y-5">
+        <div class="relative w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl p-5 space-y-5">
           <div class="space-y-2">
             <h2 class="text-lg font-bold">启用开发者模式</h2>
             <p class="text-sm text-muted-foreground">{{ developerModeAlertMessage }}</p>
@@ -215,6 +217,15 @@ const showDeveloperModeAlert = ref(false)
 const developerModeAlertMessage = ref('')
 const isMaximized = ref(false)
 const isSidebarCollapsed = ref(false)
+const isCompactLayout = ref(false)
+let compactMediaQuery: MediaQueryList | null = null
+
+function syncCompactLayout() {
+  const compact = compactMediaQuery?.matches ?? false
+  if (compact && !isCompactLayout.value) isSidebarCollapsed.value = true
+  isCompactLayout.value = compact
+}
+
 function onPositionUpdate(pos: { lat: number; lon: number }) {
   currentPosition.value = pos
 }
@@ -256,6 +267,11 @@ async function quitApp() {
 }
 
 onMounted(() => {
+  if (typeof window.matchMedia === 'function') {
+    compactMediaQuery = window.matchMedia('(max-width: 760px)')
+    syncCompactLayout()
+    compactMediaQuery.addEventListener('change', syncCompactLayout)
+  }
   isMacOS.value = System.IsMac() || navigator.userAgent.includes('Mac OS X')
   const routesStore = useRoutesStore()
   // 加载上次路线
@@ -283,6 +299,7 @@ let offCloseRequested: (() => void) | null = null
 let offDeveloperModeAlert: (() => void) | null = null
 
 onUnmounted(() => {
+  compactMediaQuery?.removeEventListener('change', syncCompactLayout)
   if (offCloseRequested) {
     offCloseRequested()
     offCloseRequested = null
@@ -295,6 +312,30 @@ onUnmounted(() => {
 </script>
 
 <style>
+.app-log-panel {
+  height: 36px;
+}
+
+.app-log-panel.is-open {
+  height: min(320px, 38%);
+}
+
+.is-compact .app-sidebar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  max-width: calc(100% - 48px);
+}
+
+.is-compact .app-main {
+  margin-left: 56px;
+}
+
+@media (max-height: 480px) {
+  .app-log-panel.is-open {
+    height: 44%;
+  }
+}
+
 .writing-mode-vertical {
   writing-mode: vertical-rl;
   text-orientation: mixed;

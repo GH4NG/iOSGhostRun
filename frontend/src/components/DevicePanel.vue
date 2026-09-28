@@ -1,6 +1,6 @@
 <template>
-  <Card class="flex flex-col overflow-hidden border-border/60 bg-card/90 shadow-xl shadow-black/5 ring-1 ring-white/5">
-    <div class="relative flex items-center justify-between p-5 border-b border-border/40 bg-card/95">
+  <Card class="flex flex-col gap-0 p-0 overflow-hidden border-border/60 bg-card/90 shadow-xl shadow-black/5 ring-1 ring-white/5">
+    <div class="relative flex items-center justify-between gap-2 p-4 border-b border-border/40 bg-card/95">
       <div class="flex items-center gap-3">
         <div class="p-2 rounded-2xl bg-primary/10 border border-primary/15 shadow-inner shadow-primary/10">
           <MobileIcon class="w-5 h-5 text-primary" />
@@ -15,7 +15,7 @@
         {{ devices.length }} 台</Badge>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon"
+          <Button variant="ghost" size="icon" aria-label="刷新设备列表"
             class="w-8 h-8 rounded-full border border-transparent hover:border-primary/20 hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
             @click="refreshDevices" :disabled="loading">
             <UpdateIcon class="w-4 h-4" :class="{ 'animate-spin': loading }" />
@@ -26,7 +26,7 @@
     </div>
 
     <div v-if="devices.length === 0"
-      class="flex flex-col items-center justify-center py-11 px-5 text-center bg-secondary/5">
+      class="flex flex-col items-center justify-center py-7 px-4 text-center bg-secondary/5">
       <div
         class="mb-4 flex h-14 w-14 items-center justify-center rounded-3xl border border-dashed border-border/60 bg-background/70">
         <MobileIcon class="h-7 w-7 text-muted-foreground/30" />
@@ -46,14 +46,14 @@
         <div v-if="selectedUdid === device.UDID" class="absolute inset-y-3 left-0 w-1 rounded-r-full bg-primary"></div>
         <div class="flex items-center gap-4">
           <div
-            class="w-11 h-11 flex items-center justify-center bg-background/80 rounded-2xl border border-border/50 group-hover:border-primary/30 group-hover:shadow-lg transition-all duration-300">
+            class="w-11 h-11 shrink-0 flex items-center justify-center bg-background/80 rounded-2xl border border-border/50 group-hover:border-primary/30 group-hover:shadow-lg transition-all duration-300">
             <MobileIcon class="w-6 h-6 text-primary/80" />
           </div>
           <div class="flex-1 min-w-0">
             <div class="text-sm font-bold tracking-tight truncate">
               {{ device.DeviceName || '未知设备' }}
             </div>
-            <div class="text-[10px] uppercase font-bold text-muted-foreground/60 mt-1 flex items-center gap-2">
+            <div class="text-[10px] uppercase font-bold text-muted-foreground/60 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
               <span>{{ device.ProductType }}</span>
               <span class="w-1 h-1 rounded-full bg-border"></span>
               <span>iOS {{ device.ProductVersion }}</span>

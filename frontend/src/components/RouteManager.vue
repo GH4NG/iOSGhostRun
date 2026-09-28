@@ -1,16 +1,16 @@
 <template>
-  <Card class="flex flex-col bg-card border-none shadow-none text-foreground">
-    <div class="flex items-center justify-between p-5 border-b border-border/40">
-      <div class="flex items-center gap-3">
-        <div class="p-1.5 rounded-lg bg-primary/10">
+  <Card class="flex flex-col gap-0 p-0 bg-card border-none shadow-none text-foreground">
+    <div class="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-border/40">
+      <div class="flex min-w-0 items-center gap-2">
+        <div class="shrink-0 p-1.5 rounded-lg bg-primary/10">
           <PinFilledIcon class="w-5 h-5 text-primary" />
         </div>
-        <span class="text-xs font-black uppercase tracking-widest text-foreground/80">路线管理 - 当前路线</span>
+        <span class="text-xs font-black uppercase tracking-widest text-foreground/80">当前路线</span>
       </div>
-      <div class="flex items-center gap-1">
+      <div class="flex shrink-0 items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon"
+            <Button variant="ghost" size="icon" aria-label="新建路线"
               class="w-8 h-8 rounded-full hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
               @click="executeClearRoute">
               <PlusIcon class="w-4 h-4" />
@@ -21,7 +21,7 @@
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon"
+            <Button variant="ghost" size="icon" aria-label="导入路线"
               class="w-8 h-8 rounded-full hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
               @click="showImport = !showImport">
               <DownloadIcon class="w-4 h-4" />
@@ -32,7 +32,7 @@
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon"
+            <Button variant="ghost" size="icon" aria-label="清空当前路线"
               class="w-8 h-8 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
               :disabled="routePoints.length === 0" @click="executeClearRoute">
               <TrashIcon class="w-4 h-4" />
@@ -43,7 +43,7 @@
       </div>
     </div>
 
-    <div class="p-6 flex flex-col gap-6">
+    <div class="p-4 min-w-0 flex flex-col gap-4">
       <!-- 导入路线区域 -->
       <div v-if="showImport"
         class="flex flex-col gap-3 p-4 bg-secondary/10 rounded-xl border border-border/40 animate-in fade-in slide-in-from-top-2">
@@ -82,7 +82,7 @@
             粘贴路线数据 (JSON)
           </div>
           <textarea v-model="importText" placeholder='{"lng":"116.29","lat":"40.00"}, ...'
-            class="min-h-[100px] p-3 text-[10px] font-mono bg-background border border-border/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 resize-none"></textarea>
+            class="w-full min-w-0 min-h-[100px] p-3 text-[10px] font-mono bg-background border border-border/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 resize-y"></textarea>
         </div>
         <div class="flex gap-2 mt-2">
           <Button size="sm" class="flex-1 h-8 text-[10px] font-bold" @click="handleImport">确认导入</Button>
@@ -93,7 +93,7 @@
       <!-- 保存路线 -->
       <div class="flex gap-2">
         <Input v-model="newRouteName" type="text" placeholder="给这条线路起个名字..."
-          class="h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all text-xs font-medium"
+          class="min-w-0 h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all text-xs font-medium"
           @keydown.enter="saveCurrentRoute" />
         <Tooltip>
           <TooltipTrigger asChild>
@@ -122,19 +122,19 @@
           <span class="text-[10px] leading-relaxed text-muted-foreground/40 font-medium">还没有保存的路线</span>
         </div>
 
-        <div v-else class="flex flex-col gap-2 max-h-[300px] overflow-y-auto no-scrollbar pr-1">
+        <div v-else class="flex flex-col gap-2">
           <div v-for="route in savedRoutes" :key="route.name"
             class="flex items-center gap-3 p-4 bg-secondary/20 rounded-xl border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 cursor-pointer group hover:shadow-lg hover:shadow-black/5"
             @click="loadRouteByName(route.name)">
             <div
-              class="w-10 h-10 rounded-lg bg-background flex items-center justify-center border border-border/50 group-hover:border-primary/20 transition-colors">
+              class="w-10 h-10 shrink-0 rounded-lg bg-background flex items-center justify-center border border-border/50 group-hover:border-primary/20 transition-colors">
               <RocketIcon class="w-5 h-5 text-primary/40 group-hover:text-primary/80 transition-colors" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-bold truncate group-hover:text-primary transition-colors tracking-tight">
                 {{ route.name }}
               </div>
-              <div class="text-[10px] uppercase font-black text-muted-foreground/40 mt-1 flex items-center gap-2">
+              <div class="text-[10px] uppercase font-black text-muted-foreground/40 mt-1 flex flex-wrap items-center gap-2">
                 <span>{{ route.points.length }} <span class="font-bold">PTS</span></span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
                 <span>{{ formatDist(calculateDist(route.points)) }}</span>
