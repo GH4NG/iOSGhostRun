@@ -175,8 +175,6 @@ import {
   ChevronUpIcon,
   LayersIcon,
   GlobeIcon as Globe,
-  CursorArrowIcon as Navigation,
-  SunIcon as Earth,
   Pencil1Icon
 } from '@radix-icons/vue'
 import Map from 'ol/Map'
@@ -185,7 +183,6 @@ import TileLayer from 'ol/layer/Tile'
 import VectorLayer from 'ol/layer/Vector'
 import VectorSource from 'ol/source/Vector'
 import XYZ from 'ol/source/XYZ'
-import OSM from 'ol/source/OSM'
 import { fromLonLat, toLonLat } from 'ol/proj'
 import Feature from 'ol/Feature'
 import Point from 'ol/geom/Point'
@@ -247,8 +244,7 @@ watch(searchQuery, newVal => {
 
 const availableLayers = [
   { id: 'amap-vec', name: '高德-矢量', icon: Globe },
-  { id: 'amap-img', name: '高德-卫星', icon: Globe },
-  { id: 'osm', name: 'OpenStreetMap', icon: Globe }
+  { id: 'amap-img', name: '高德-卫星', icon: Globe }
 ]
 
 const currentLayerId = ref('amap-vec')
@@ -332,10 +328,6 @@ function initBaseLayers() {
         crossOrigin: 'anonymous'
       }),
       visible: false
-    }),
-    osm: new TileLayer({
-      source: new OSM(),
-      visible: false
     })
   }
 }
@@ -347,6 +339,13 @@ function switchLayer(id: string) {
   })
   // 切换图层时重新显示路由，以应用正确的坐标转换
   updateRouteDisplay()
+}
+
+function toMapCoordinate(lat: number, lon: number) {
+  if (currentLayerId.value.startsWith('amap')) {
+    ;[lat, lon] = WGS84ToGCJ02(lat, lon)
+  }
+  return fromLonLat([lon, lat])
 }
 
 onMounted(() => {
@@ -387,9 +386,7 @@ onMounted(() => {
 
     let coords = toLonLat(evt.coordinate) // [lon, lat]
 
-    // 根据当前图层进行坐标转换
     // 高德地图返回 GCJ-02，需要转换为 WGS84 保存
-    // OSM 已经是 WGS84
     if (currentLayerId.value.startsWith('amap')) {
       // 高德地图，将 GCJ-02 转换为 WGS84
       // GCJ02ToWGS84 的参数顺序是 (lat, lon)
@@ -450,18 +447,8 @@ watch(
     positionSource.clear()
 
     if (pos) {
-      // 根据当前图层对实时位置进行坐标转换
-      let displayLon = pos.lon
-      let displayLat = pos.lat
-
-      if (currentLayerId.value.startsWith('amap')) {
-        // 高德地图，将 WGS84 转换为 GCJ-02 显示
-        ;[displayLat, displayLon] = WGS84ToGCJ02(pos.lat, pos.lon)
-      }
-      // OSM 和其他直接使用 WGS84
-
       const feature = new Feature({
-        geometry: new Point(fromLonLat([displayLon, displayLat]))
+        geometry: new Point(toMapCoordinate(pos.lat, pos.lon))
       })
       positionSource.addFeature(feature)
     }
@@ -476,20 +463,10 @@ function updateRouteDisplay() {
   const points = props.modelValue
   if (points.length === 0) return
 
-  points.forEach((p, index) => {
-    // 根据当前图层进行坐标转换
-    // 路线点存储的是 WGS84，需要根据当前图层转换为对应坐标系显示
-    let displayLon = p.lon
-    let displayLat = p.lat
-
-    if (currentLayerId.value.startsWith('amap')) {
-      // 高德地图，将 WGS84 转换为 GCJ-02 显示
-      // WGS84ToGCJ02 的参数顺序是 (lat, lon)，返回 [lat, lon]
-      ;[displayLat, displayLon] = WGS84ToGCJ02(p.lat, p.lon)
-    }
-
+  const coords = points.map(p => toMapCoordinate(p.lat, p.lon))
+  points.forEach((_, index) => {
     const feature = new Feature({
-      geometry: new Point(fromLonLat([displayLon, displayLat]))
+      geometry: new Point(coords[index])
     })
 
     // 根据索引设置不同样式
@@ -505,17 +482,6 @@ function updateRouteDisplay() {
   })
 
   if (points.length >= 2) {
-    const coords = points.map(p => {
-      let displayLon = p.lon
-      let displayLat = p.lat
-
-      if (currentLayerId.value.startsWith('amap')) {
-        // WGS84ToGCJ02 的参数顺序是 (lat, lon)，返回 [lat, lon]
-        ;[displayLat, displayLon] = WGS84ToGCJ02(p.lat, p.lon)
-      }
-
-      return fromLonLat([displayLon, displayLat])
-    })
     const lineFeature = new Feature({
       geometry: new LineString(coords)
     })
@@ -545,7 +511,7 @@ function selectSearchResult(result: any) {
 
   if (map) {
     map.getView().animate({
-      center: fromLonLat([lon, lat]),
+      center: toMapCoordinate(lat, lon),
       zoom: 16,
       duration: 500
     })
@@ -565,7 +531,7 @@ const { fitToRoute, centerOnPosition } = {
   centerOnPosition: (lat: number, lon: number) => {
     if (!map) return
     map.getView().animate({
-      center: fromLonLat([lon, lat]),
+      center: toMapCoordinate(lat, lon),
       zoom: 16,
       duration: 300
     })
