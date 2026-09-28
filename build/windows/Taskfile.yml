@@ -11,13 +11,19 @@ tasks:
             - task: common:build:frontend
               vars:
                   PRODUCTION: '{{.PRODUCTION}}'
+                  BUILD_FLAGS:
+                      ref: .BUILD_FLAGS
+                  DEV:
+                      ref: .DEV
             - task: common:generate:icons
         cmds:
             - task: generate:syso
+              vars:
+                  ARCH: '{{.ARCH}}'
             - go build {{.BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}-{{.ARCH}}.exe
-            - cmd: powershell Remove-item *.syso
+            - cmd: powershell -NoProfile -NonInteractive -Command "Remove-Item -LiteralPath 'wails_windows_{{.ARCH}}.syso'"
               platforms: [windows]
-            - cmd: rm -f *.syso
+            - cmd: rm -f wails_windows_{{.ARCH}}.syso
               platforms: [linux, darwin]
         vars:
             BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui"{{else}}-buildvcs=false -gcflags=all="-l"{{end}}'

@@ -12,7 +12,7 @@ on:
                 type: string
 
 permissions:
-    contents: write
+    contents: read
 
 jobs:
     build:
@@ -88,6 +88,8 @@ jobs:
     release:
         needs: build
         runs-on: ubuntu-latest
+        permissions:
+            contents: write
 
         steps:
             - name: Download artifacts
