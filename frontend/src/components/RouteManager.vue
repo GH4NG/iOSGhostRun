@@ -282,7 +282,7 @@ function handleImport() {
         if (Array.isArray(parsed)) {
           points = parsed.map(p => {
             let lat = parseFloat(p.lat)
-            let lon = parseFloat(p.lng || p.lon)
+            let lon = parseFloat(p.lng ?? p.lon)
 
             // 根据导入坐标系进行转换
             if (coordSystem === 'gcj02') {
@@ -299,17 +299,20 @@ function handleImport() {
     }
 
     if (points.length > 0) {
+      if (points.some(p => !Number.isFinite(p.lat) || !Number.isFinite(p.lon) ||
+        p.lat < -90 || p.lat > 90 || p.lon < -180 || p.lon > 180)) {
+        throw new Error('路线包含无效经纬度，请检查数据格式和坐标范围。')
+      }
       emit('update:modelValue', points)
       emit('locating-point', points[0])
       showImport.value = false
       importText.value = ''
       showSuccess(`已导入路线，包含 ${points.length} 个位置点`)
     } else {
-      alert('无法识别路线数据格式，请确保格式正确。')
+      showErrorDialog('无法识别路线数据格式，请确保格式正确。')
     }
   } catch (e) {
     showErrorDialog(`操作失败: ${e instanceof Error ? e.message : '未知错误'}`)
-    alert('导入失败，请检查数据格式。')
   }
 }
 
