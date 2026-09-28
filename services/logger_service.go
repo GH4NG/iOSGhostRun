@@ -2,6 +2,7 @@ package services
 
 import (
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -15,17 +16,17 @@ type LogEntry struct {
 	Time    string `json:"time"`
 }
 
-var Log *LoggerService
+const maxLogEntries = 1000
+
+var Log = &LoggerService{logs: make([]LogEntry, 0, maxLogEntries)}
 var appShuttingDown atomic.Bool
 
 type LoggerService struct {
+	mu   sync.RWMutex
 	logs []LogEntry
 }
 
 func NewLoggerService() *LoggerService {
-	Log = &LoggerService{
-		logs: make([]LogEntry, 0),
-	}
 	return Log
 }
 
@@ -43,30 +44,43 @@ func (l *LoggerService) logMessage(level string, module string, message string) 
 		Message: message,
 		Time:    time.Now().Format("2006-01-02 15:04:05"),
 	}
-	l.logs = append(l.logs, entry)
-	if len(l.logs) > 1000 {
-		l.logs = l.logs[1:]
+	l.mu.Lock()
+	if len(l.logs) == maxLogEntries {
+		copy(l.logs, l.logs[1:])
+		l.logs[len(l.logs)-1] = entry
+	} else {
+		l.logs = append(l.logs, entry)
 	}
+	l.mu.Unlock()
 	switch level {
 	case "debug":
-		slog.Debug(message)
+		slog.Debug(message, "module", module)
 	case "info":
-		slog.Info(message)
+		slog.Info(message, "module", module)
 	case "warn":
-		slog.Warn(message)
+		slog.Warn(message, "module", module)
 	case "error":
-		slog.Error(message)
+		slog.Error(message, "module", module)
 	}
 
 	// 退出阶段不再向前端分发日志事件，避免关闭流程阻塞。
-	if !appShuttingDown.Load() {
-		application.Get().Event.Emit("log-event", entry)
-	}
+	emitAppEvent("log-event", entry)
 }
 
 // GetLogs 获取所有日志
 func (l *LoggerService) GetLogs() []LogEntry {
-	return l.logs
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return append([]LogEntry{}, l.logs...)
+}
+
+func emitAppEvent(name string, data any) {
+	if appShuttingDown.Load() {
+		return
+	}
+	if app := application.Get(); app != nil {
+		app.Event.Emit(name, data)
+	}
 }
 
 // Debug 调试日志

@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { TrashIcon, CopyIcon } from '@radix-icons/vue'
 import { Events } from '@wailsio/runtime'
 import { LoggerService } from '../../bindings/iOSGhostRun/services'
@@ -83,6 +83,8 @@ const filterLevel = ref('all')
 const levels = ['all', 'info', 'warn', 'error', 'debug']
 const logContainer = ref<HTMLDivElement | null>(null)
 const copySuccess = ref(false)
+let offLog: (() => void) | null = null
+let disposed = false
 const { showSuccess, showError, showInfo } = useNotification()
 
 const filteredLogs = computed(() => {
@@ -143,11 +145,12 @@ function getLogClass(level: string) {
 onMounted(async () => {
   // 加载现有日志
   const existingLogs = await LoggerService.GetLogs()
+  if (disposed) return
   logs.value = existingLogs || []
 
   // 监听新日志
-  Events.On('log-event', (ev: any) => {
-    const data = ev.data as LogEntry
+  offLog = Events.On('log-event', ev => {
+    const data = ev.data
     logs.value.push(data)
     if (logs.value.length > 1000) {
       logs.value.shift()
@@ -156,6 +159,11 @@ onMounted(async () => {
   })
 
   nextTick(scrollToBottom)
+})
+
+onUnmounted(() => {
+  disposed = true
+  offLog?.()
 })
 </script>
 
