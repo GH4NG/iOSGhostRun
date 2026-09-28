@@ -53,14 +53,14 @@
               class="h-10 w-10 shadow-2xl border-border/30 bg-card/85 backdrop-blur-md ring-1 ring-white/10 transition-all duration-300"
               :class="[
                 isDrawingMode
-                  ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90 scale-110 shadow-primary/30'
+                  ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90 shadow-primary/30'
                   : 'text-muted-foreground hover:bg-accent'
               ]" :disabled="disabled" :aria-label="isDrawingMode ? '停止绘制' : '开启路径绘制模式'"
               :aria-pressed="isDrawingMode" @click="isDrawingMode = !isDrawingMode">
               <Pencil1Icon class="w-6 h-6" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="left">{{ isDrawingMode ? '停止绘制' : '开启路径绘制模式' }}</TooltipContent>
+          <TooltipContent side="bottom">{{ isDrawingMode ? '停止绘制' : '开启路径绘制模式' }}</TooltipContent>
         </Tooltip>
         <Tooltip v-if="isDrawingMode">
           <TooltipTrigger asChild>
@@ -70,7 +70,7 @@
               <ResetIcon class="w-6 h-6" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="left">撤回上一步</TooltipContent>
+          <TooltipContent side="bottom" :side-offset="8">撤回上一步</TooltipContent>
         </Tooltip>
       </div>
     </div>
@@ -83,13 +83,13 @@
             class="h-10 w-10 shadow-2xl border-border/30 bg-card/85 backdrop-blur-md ring-1 ring-white/10 transition-all duration-300"
             :class="[
               !isLayerSwitcherCollapsed
-                ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-primary/30'
+                ? 'bg-primary text-primary-foreground border-primary shadow-primary/30'
                 : 'text-muted-foreground hover:bg-accent'
             ]" @click="isLayerSwitcherCollapsed = !isLayerSwitcherCollapsed">
             <LayersIcon class="w-6 h-6" :class="{ 'text-primary': isLayerSwitcherCollapsed }" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="left">切换地图图层</TooltipContent>
+        <TooltipContent side="bottom" align="end">切换地图图层</TooltipContent>
       </Tooltip>
 
       <Transition enter-active-class="transition duration-300 ease-out"
