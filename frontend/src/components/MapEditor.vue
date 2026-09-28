@@ -228,8 +228,12 @@ function onLocatingPoint(point: RoutePoint) {
 }
 
 let searchTimer: number | null = null
+let searchController: AbortController | null = null
+let resizeTimer: number | null = null
+let resizeObserver: ResizeObserver | null = null
 watch(searchQuery, newVal => {
   if (searchTimer) clearTimeout(searchTimer)
+  searchController?.abort()
 
   const q = newVal.trim()
   if (!q) {
@@ -407,25 +411,32 @@ onMounted(() => {
   updateRouteDisplay()
 
   nextTick(() => {
-    setTimeout(() => {
-      if (map) (map as any).updateSize()
+    resizeTimer = window.setTimeout(() => {
+      map?.updateSize()
     }, 200)
   })
 
-  let resizeObserver: ResizeObserver | null = null
   if (mapContainer.value && typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(entries => {
       const r = entries[0].contentRect
       if (r.width > 0 && r.height > 0 && map) {
-        ; (map as any).updateSize()
+        map.updateSize()
       }
     })
     resizeObserver.observe(mapContainer.value)
   }
+})
 
-  onUnmounted(() => {
-    if (resizeObserver) resizeObserver.disconnect()
-  })
+onUnmounted(() => {
+  if (searchTimer !== null) clearTimeout(searchTimer)
+  if (resizeTimer !== null) clearTimeout(resizeTimer)
+  searchController?.abort()
+  resizeObserver?.disconnect()
+  map?.setTarget(undefined)
+  map?.dispose()
+  map = null
+  routeSource = null
+  positionSource = null
 })
 
 watch(
@@ -494,12 +505,18 @@ async function searchLocation() {
   if (!q) return
 
   try {
+    searchController?.abort()
+    searchController = new AbortController()
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`
     const res = await fetch(url, {
-      headers: { 'Accept-Language': 'zh-CN' }
+      headers: { 'Accept-Language': 'zh-CN' },
+      signal: searchController.signal
     })
-    searchResults.value = await res.json()
+    if (!res.ok) throw new Error(`搜索请求失败 (${res.status})`)
+    const results = await res.json()
+    if (searchQuery.value.trim() === q) searchResults.value = results
   } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') return
     showErrorDialog(`操作失败: ${e instanceof Error ? e.message : '未知错误'}`)
     searchResults.value = []
   }
