@@ -67,7 +67,7 @@ jobs:
               run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
             - name: Install Task
-              uses: arduino/setup-task@v2
+              uses: arduino/setup-task@v3
               with:
                   repo-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -87,7 +87,7 @@ jobs:
 
     release:
         needs: build
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04
         permissions:
             contents: write
 
@@ -113,7 +113,7 @@ jobs:
                   fi
 
             - name: Create Release
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   tag_name: ${{ steps.tag.outputs.tag }}
                   name: Release ${{ steps.tag.outputs.tag }}

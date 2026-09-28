@@ -54,13 +54,13 @@ func (l *LoggerService) logMessage(level string, module string, message string) 
 	l.mu.Unlock()
 	switch level {
 	case "debug":
-		slog.Debug(message, "module", module)
+		slog.Debug(message)
 	case "info":
-		slog.Info(message, "module", module)
+		slog.Info(message)
 	case "warn":
-		slog.Warn(message, "module", module)
+		slog.Warn(message)
 	case "error":
-		slog.Error(message, "module", module)
+		slog.Error(message)
 	}
 
 	// 退出阶段不再向前端分发日志事件，避免关闭流程阻塞。
