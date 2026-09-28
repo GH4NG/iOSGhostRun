@@ -110,6 +110,7 @@ func main() {
 		if err == nil {
 			_ = services.UnmountImage(devInfo.UDID)
 		}
+		_ = services.StopTunnel()
 		window.Close()
 	})
 

@@ -18,6 +18,7 @@ const defaultTunnelInfoPort = 49151
 
 var globalTunnelManager *tunnel.TunnelManager
 var globalTunnelCancel context.CancelFunc
+var globalTunnelDone <-chan struct{}
 var tunnelStateMu sync.Mutex
 
 // StartTunnel 启动 tunnel
@@ -33,7 +34,7 @@ func StartTunnel(ctx context.Context) error {
 	tm := tunnel.NewTunnelManager(pm, userspaceTUN)
 	tunnelCtx, cancelTunnel := context.WithCancel(ctx)
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", defaultTunnelInfoPort))
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", defaultTunnelInfoPort))
 	if err != nil {
 		cancelTunnel()
 		tm.Close()
@@ -50,17 +51,24 @@ func StartTunnel(ctx context.Context) error {
 	}
 	globalTunnelManager = tm
 	globalTunnelCancel = cancelTunnel
+	tunnelDone := make(chan struct{})
+	globalTunnelDone = tunnelDone
 	tunnelStateMu.Unlock()
 
+	var updater sync.WaitGroup
+	updater.Add(1)
 	go func() {
+		defer updater.Done()
 		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
 		for {
+			if err := tm.UpdateTunnels(tunnelCtx); err != nil && tunnelCtx.Err() == nil {
+				Log.Debug("TunnelService", "更新隧道失败: "+err.Error())
+			}
 			select {
 			case <-tunnelCtx.Done():
 				return
 			case <-ticker.C:
-				_ = tm.UpdateTunnels(tunnelCtx)
 			}
 		}
 	}()
@@ -117,8 +125,10 @@ func StartTunnel(ctx context.Context) error {
 	})
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", defaultTunnelInfoPort),
-		Handler: mux,
+		Addr:              listener.Addr().String(),
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       30 * time.Second,
 	}
 
 	go func() {
@@ -133,11 +143,14 @@ func StartTunnel(ctx context.Context) error {
 	defer cancel()
 	_ = server.Shutdown(shutdownCtx)
 	_ = listener.Close()
+	updater.Wait()
 	tm.Close()
 
 	tunnelStateMu.Lock()
 	globalTunnelManager = nil
 	globalTunnelCancel = nil
+	globalTunnelDone = nil
+	close(tunnelDone)
 	tunnelStateMu.Unlock()
 	return nil
 }
@@ -146,10 +159,14 @@ func StartTunnel(ctx context.Context) error {
 func StopTunnel() error {
 	tunnelStateMu.Lock()
 	cancel := globalTunnelCancel
+	done := globalTunnelDone
 	tunnelStateMu.Unlock()
 
 	if cancel != nil {
 		cancel()
+		if done != nil {
+			<-done
+		}
 	}
 	return nil
 }
