@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -46,9 +47,15 @@ func ConfigureUpdateService(service *UpdateService, engine *updater.Updater) err
 	if service == nil || engine == nil {
 		return errors.New("初始化更新服务失败")
 	}
+	applySystemProxy("UpdateService")
+	updateHTTPClient := &http.Client{
+		Transport: http.DefaultTransport,
+		Timeout:   30 * time.Second,
+	}
 	provider, err := endpoint.New(endpoint.Config{
-		URL:     updateManifestURL,
-		Channel: "stable",
+		URL:        updateManifestURL,
+		Channel:    "stable",
+		HTTPClient: updateHTTPClient,
 	})
 	if err != nil {
 		return fmt.Errorf("创建更新源失败: %w", err)
@@ -56,6 +63,7 @@ func ConfigureUpdateService(service *UpdateService, engine *updater.Updater) err
 	githubProvider, err := updatergithub.New(updatergithub.Config{
 		Repository:    "GH4NG/iOSGhostRun",
 		ChecksumAsset: "SHA256SUMS",
+		HTTPClient:    updateHTTPClient,
 	})
 	if err != nil {
 		return fmt.Errorf("创建 GitHub 更新源失败: %w", err)
@@ -80,6 +88,7 @@ func (s *UpdateService) CheckForUpdate() (UpdateInfo, error) {
 	if s.engine == nil {
 		return UpdateInfo{}, errors.New("更新服务尚未初始化")
 	}
+	applySystemProxy("UpdateService")
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 	release, err := s.engine.Check(ctx)
@@ -113,6 +122,7 @@ func (s *UpdateService) DownloadAndInstall(version string) error {
 	if strings.TrimPrefix(strings.TrimSpace(version), "v") != strings.TrimPrefix(s.pending.Version, "v") {
 		return errors.New("发布版本已变化，请重新检查更新")
 	}
+	applySystemProxy("UpdateService")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	if err := s.engine.DownloadAndInstall(ctx); err != nil {

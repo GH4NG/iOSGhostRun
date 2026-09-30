@@ -18,28 +18,28 @@ var (
 )
 
 // applySystemProxy 检测系统代理
-func applySystemProxy() {
+func applySystemProxy(component string) {
 	proxyOnce.Do(installProxyHook)
 
 	if os.Getenv("HTTPS_PROXY") != "" || os.Getenv("https_proxy") != "" ||
 		os.Getenv("HTTP_PROXY") != "" || os.Getenv("http_proxy") != "" {
-		Log.Info("ImageService", "已通过环境变量配置代理，跳过系统代理检测")
+		Log.Info(component, "已通过环境变量配置代理")
 		return
 	}
 
 	proxy, err := detectSystemProxy()
 	if err != nil {
-		Log.Warn("ImageService", fmt.Sprintf("检测系统代理失败: %v", err))
+		Log.Warn(component, fmt.Sprintf("检测系统代理失败: %v", err))
 		return
 	}
 	if proxy == "" {
-		Log.Info("ImageService", "未检测到系统代理，直连下载")
+		Log.Info(component, "未检测到系统代理，直连下载")
 		return
 	}
 
 	u, err := url.Parse(proxy)
 	if err != nil || u.Host == "" {
-		Log.Warn("ImageService", fmt.Sprintf("系统代理地址无效: %s", proxy))
+		Log.Warn(component, fmt.Sprintf("系统代理地址无效: %s", proxy))
 		return
 	}
 
@@ -48,7 +48,7 @@ func applySystemProxy() {
 	_ = os.Setenv("HTTPS_PROXY", proxy)
 	_ = os.Setenv("http_proxy", proxy)
 	_ = os.Setenv("https_proxy", proxy)
-	Log.Info("ImageService", fmt.Sprintf("检测到系统代理 %s，镜像下载将使用该代理", proxy))
+	Log.Info(component, fmt.Sprintf("检测到系统代理 %s，网络下载将使用该代理", proxy))
 }
 
 func detectSystemProxy() (string, error) {
@@ -116,7 +116,7 @@ func readRegValue(key, name string) (string, error) {
 func installProxyHook() {
 	tr, ok := http.DefaultTransport.(*http.Transport)
 	if !ok {
-		Log.Warn("ImageService", "DefaultTransport 类型异常，无法应用系统代理")
+		Log.Warn("Network", "DefaultTransport 类型异常，无法应用系统代理")
 		return
 	}
 	tr.Proxy = func(req *http.Request) (*url.URL, error) {
