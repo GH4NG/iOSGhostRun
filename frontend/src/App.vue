@@ -26,6 +26,14 @@
                 {{ isMaximized ? '−' : '+' }}
               </span>
             </TitlebarButton>
+            <TitlebarButton
+              class="relative ml-2 h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
+              :aria-label="updateInfo?.available ? `安装 v${updateInfo.latestVersion}` : '检查更新'"
+              :disabled="isCheckingUpdate" @click="openUpdater">
+              <UpdateIcon class="w-3.5 h-3.5" :class="{ 'animate-spin': isCheckingUpdate }" />
+              <span v-if="updateInfo?.available"
+                class="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-primary"></span>
+            </TitlebarButton>
           </div>
 
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -41,6 +49,14 @@
           </div>
 
           <div class="flex items-center gap-1" style="--wails-draggable: no-drag">
+            <TitlebarButton
+              class="relative w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
+              :aria-label="updateInfo?.available ? `安装 v${updateInfo.latestVersion}` : '检查更新'"
+              :disabled="isCheckingUpdate" @click="openUpdater">
+              <UpdateIcon class="w-4 h-4" :class="{ 'animate-spin': isCheckingUpdate }" />
+              <span v-if="updateInfo?.available"
+                class="absolute right-1.5 top-1 h-1.5 w-1.5 rounded-full bg-primary"></span>
+            </TitlebarButton>
             <TitlebarButton
               class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
               aria-label="最小化" @click="onMinimise">
@@ -134,6 +150,68 @@
         </main>
       </div>
 
+      <!-- 应用更新 -->
+      <div v-if="showUpdateDialog" class="fixed inset-0 z-[10000] flex items-center justify-center px-6"
+        style="--wails-draggable: no-drag">
+        <div class="absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="closeUpdater"></div>
+        <div class="relative w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl p-5 space-y-5">
+          <div class="flex items-start gap-3">
+            <div class="mt-0.5 rounded-xl bg-primary/15 p-2.5 text-primary">
+              <UpdateIcon class="h-5 w-5" :class="{ 'animate-spin': isCheckingUpdate || isInstallingUpdate }" />
+            </div>
+            <div class="min-w-0 flex-1 space-y-1">
+              <h2 class="text-lg font-bold">应用更新</h2>
+              <p v-if="isCheckingUpdate" class="text-sm text-muted-foreground">正在检查最新版本…</p>
+              <p v-else-if="isInstallingUpdate" class="text-sm text-muted-foreground">
+                正在下载并校验更新包<span v-if="updateProgress > 0">（{{ updateProgress }}%）</span>，请勿关闭程序…
+              </p>
+              <p v-else-if="updateInfo?.available" class="text-sm text-muted-foreground">
+                v{{ updateInfo.currentVersion }} → <span class="font-semibold text-foreground">v{{ updateInfo.latestVersion }}</span>
+                · {{ formatBytes(updateInfo.assetSize) }}
+              </p>
+              <p v-else-if="updateError" class="text-sm text-muted-foreground">无法获取更新信息。</p>
+              <p v-else class="text-sm text-muted-foreground">当前已是最新版本<span v-if="updateInfo">（v{{ updateInfo.currentVersion }}）</span>。</p>
+            </div>
+          </div>
+
+          <div v-if="updateError" class="rounded-xl border border-destructive/35 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+            {{ updateError }}
+          </div>
+
+          <div v-if="isInstallingUpdate" class="h-1.5 overflow-hidden rounded-full bg-secondary/70">
+            <div class="h-full rounded-full bg-primary transition-[width] duration-200"
+              :class="{ 'animate-pulse': updateProgress === 0 }"
+              :style="{ width: updateProgress > 0 ? `${updateProgress}%` : '12%' }"></div>
+          </div>
+
+          <div v-if="updateInfo?.available && updateInfo.releaseNotes" class="space-y-2">
+            <div class="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">更新说明</div>
+            <div class="max-h-52 overflow-y-auto whitespace-pre-wrap rounded-xl border border-border/70 bg-background/60 p-3 text-sm leading-6 text-muted-foreground">{{ updateInfo.releaseNotes }}</div>
+          </div>
+
+          <p v-if="updateInfo?.available" class="text-xs leading-5 text-muted-foreground">
+            安装包会先进行加密摘要校验。下载完成后应用将自动退出、替换并重新启动。
+          </p>
+
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            <button class="px-4 h-9 rounded-md border border-border hover:bg-secondary/40 transition-colors disabled:opacity-50"
+              :disabled="isCheckingUpdate || isInstallingUpdate" @click="closeUpdater">
+              稍后
+            </button>
+            <button v-if="!updateInfo?.available"
+              class="px-4 h-9 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+              :disabled="isCheckingUpdate || isInstallingUpdate" @click="checkForUpdate(true)">
+              重新检查
+            </button>
+            <button v-else
+              class="px-4 h-9 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+              :disabled="isCheckingUpdate || isInstallingUpdate" @click="installUpdate">
+              {{ isInstallingUpdate ? '正在准备…' : '立即更新' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div v-if="showCloseDialog" class="fixed inset-0 z-[10000] flex items-center justify-center px-6"
         style="--wails-draggable: no-drag">
         <div class="absolute inset-0 bg-black/45 backdrop-blur-[2px]" @click="showCloseDialog = false"></div>
@@ -191,10 +269,12 @@ import {
   MinusIcon,
   SquareIcon,
   CopyIcon,
-  Cross1Icon
+  Cross1Icon,
+  UpdateIcon
 } from '@radix-icons/vue'
 import { Events, System, Window } from '@wailsio/runtime'
-import type { RunningState } from '../bindings/iOSGhostRun/services/models'
+import type { RunningState, UpdateInfo } from '../bindings/iOSGhostRun/services/models'
+import { CheckForUpdate, DownloadAndInstall } from '../bindings/iOSGhostRun/services/updateservice'
 import MapEditor from './components/MapEditor.vue'
 import LogPanel from './components/LogPanel.vue'
 import DevicePanel from './components/DevicePanel.vue'
@@ -204,6 +284,7 @@ import { useRoutesStore, type RoutePoint } from './stores/routes'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { TitlebarButton } from '@/components/ui/titlebar-button'
+import { useNotification } from './composables/useNotification'
 
 const mapEditor = ref<InstanceType<typeof MapEditor> | null>(null)
 const selectedUdid = ref('')
@@ -218,7 +299,15 @@ const developerModeAlertMessage = ref('')
 const isMaximized = ref(false)
 const isSidebarCollapsed = ref(false)
 const isCompactLayout = ref(false)
+const updateInfo = ref<UpdateInfo | null>(null)
+const showUpdateDialog = ref(false)
+const isCheckingUpdate = ref(false)
+const isInstallingUpdate = ref(false)
+const updateProgress = ref(0)
+const updateError = ref('')
+const { showError } = useNotification()
 let compactMediaQuery: MediaQueryList | null = null
+let updateCheckTimer: number | null = null
 
 function syncCompactLayout() {
   const compact = compactMediaQuery?.matches ?? false
@@ -254,6 +343,55 @@ async function onToggleMaximise() {
 
 function requestClose() {
   showCloseDialog.value = true
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '未知大小'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`
+}
+
+async function checkForUpdate(manual = false) {
+  if (isCheckingUpdate.value || isInstallingUpdate.value) return
+  isCheckingUpdate.value = true
+  updateError.value = ''
+  try {
+    updateInfo.value = await CheckForUpdate()
+    if (manual || updateInfo.value.available) showUpdateDialog.value = true
+  } catch (error) {
+    updateError.value = errorMessage(error)
+    if (manual) showUpdateDialog.value = true
+  } finally {
+    isCheckingUpdate.value = false
+  }
+}
+
+function openUpdater() {
+  showUpdateDialog.value = true
+  if (!updateInfo.value) void checkForUpdate(true)
+}
+
+function closeUpdater() {
+  if (!isInstallingUpdate.value) showUpdateDialog.value = false
+}
+
+async function installUpdate() {
+  if (!updateInfo.value?.available || isInstallingUpdate.value) return
+  isInstallingUpdate.value = true
+  updateProgress.value = 0
+  updateError.value = ''
+  try {
+    await DownloadAndInstall(updateInfo.value.latestVersion)
+  } catch (error) {
+    updateError.value = errorMessage(error)
+    showError(`更新失败：${updateError.value}`, 6000)
+    isInstallingUpdate.value = false
+  }
 }
 
 async function minimiseToTaskbar() {
@@ -293,12 +431,31 @@ onMounted(() => {
     developerModeAlertMessage.value = event.data
     showDeveloperModeAlert.value = true
   })
+
+  offUpdateProgress = Events.On('wails:updater:download-progress', event => {
+    let data = event.data
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data)
+      } catch {
+        return
+      }
+    }
+    if (data?.total > 0) {
+      updateProgress.value = Math.min(100, Math.round((data.written / data.total) * 100))
+    }
+  })
+
+  // 启动后静默检查；只有发现新版本时才打扰用户。
+  updateCheckTimer = window.setTimeout(() => void checkForUpdate(false), 1500)
 })
 
 let offCloseRequested: (() => void) | null = null
 let offDeveloperModeAlert: (() => void) | null = null
+let offUpdateProgress: (() => void) | null = null
 
 onUnmounted(() => {
+  if (updateCheckTimer !== null) window.clearTimeout(updateCheckTimer)
   compactMediaQuery?.removeEventListener('change', syncCompactLayout)
   if (offCloseRequested) {
     offCloseRequested()
@@ -308,6 +465,8 @@ onUnmounted(() => {
     offDeveloperModeAlert()
     offDeveloperModeAlert = null
   }
+  offUpdateProgress?.()
+  offUpdateProgress = null
 })
 </script>
 
