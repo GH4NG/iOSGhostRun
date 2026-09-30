@@ -6,6 +6,7 @@ import (
 	"iOSGhostRun/services"
 	"log"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -35,13 +36,31 @@ func main() {
 	devicesSvc := services.NewDevicesService()
 	locationSvc := services.NewLocationService()
 	runningSvc := services.NewRunningService(locationSvc)
+	updateSvc := services.NewUpdateService()
 
 	var window *application.WebviewWindow
+	var allowQuit atomic.Bool
+	var cleanupOnce sync.Once
+	cleanup := func() {
+		cleanupOnce.Do(func() {
+			services.SetAppShuttingDown(true)
+			runningSvc.StopRun()
+			devInfo, err := devicesSvc.GetSelectedDevice()
+			if err == nil {
+				_ = services.UnmountImage(devInfo.UDID)
+			}
+			_ = services.StopTunnel()
+		})
+	}
 
 	app := application.New(application.Options{
 		Name:        "iOSGhostRun",
 		Description: "iOS虚拟定位跑步应用",
 		LogLevel:    slog.LevelInfo,
+		ShouldQuit: func() bool {
+			cleanup()
+			return true
+		},
 		// 二次启动时唤起已有窗口
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "com.iosghostrun.app",
@@ -57,6 +76,7 @@ func main() {
 			application.NewService(devicesSvc),
 			application.NewService(locationSvc),
 			application.NewService(runningSvc),
+			application.NewService(updateSvc),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -68,9 +88,11 @@ func main() {
 			ApplicationID: "com.iosghostrun.app",
 		},
 	})
+	if err := services.ConfigureUpdateService(updateSvc, app.Updater); err != nil {
+		log.Fatalf("配置应用更新失败: %v", err)
+	}
 
 	app.SetIcon(icon)
-	var allowQuit atomic.Bool
 
 	// Create a new window with the necessary options.
 	// 'Title' is the title of the window.
@@ -103,14 +125,8 @@ func main() {
 		if allowQuit.Load() {
 			return
 		}
-		services.SetAppShuttingDown(true)
 		allowQuit.Store(true)
-		runningSvc.StopRun()
-		devInfo, err := devicesSvc.GetSelectedDevice()
-		if err == nil {
-			_ = services.UnmountImage(devInfo.UDID)
-		}
-		_ = services.StopTunnel()
+		cleanup()
 		window.Close()
 	})
 
