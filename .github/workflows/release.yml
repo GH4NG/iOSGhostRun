@@ -97,11 +97,13 @@ jobs:
               with:
                   path: artifacts
 
-            - name: Prepare release files
-              run: |
-                  mkdir -p release
-                  find artifacts -type f -exec mv {} release/ \;
-                  ls -la release/
+            - name: Set up Go
+              uses: actions/setup-go@v6
+              with:
+                  go-version: 'stable'
+
+            - name: Install Wails CLI
+              run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
             - name: Get tag name
               id: tag
@@ -111,6 +113,28 @@ jobs:
                   else
                     echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
                   fi
+
+            - name: Prepare release files
+              env:
+                  RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+              run: |
+                  mkdir -p release
+                  find artifacts -type f -exec mv {} release/ \;
+                  mapfile -t update_artifacts < <(find release -maxdepth 1 -type f \( -name '*.exe' -o -name '*.AppImage' -o -name '*darwin*.zip' \) -print | sort)
+                  if [ "${#update_artifacts[@]}" -eq 0 ]; then
+                      echo "No updater artifacts found" >&2
+                      exit 1
+                  fi
+                  sha256sum "${update_artifacts[@]}" | sed 's#  release/#  #' > release/SHA256SUMS
+                  wails3 updater manifest \
+                      -version "$RELEASE_TAG" \
+                      -channel stable \
+                      -name "iOSGhostRun $RELEASE_TAG" \
+                      -notes "iOSGhostRun $RELEASE_TAG" \
+                      -url-prefix "https://github.com/${{ github.repository }}/releases/download/$RELEASE_TAG/" \
+                      -output release/update.json \
+                      "${update_artifacts[@]}"
+                  ls -la release/
 
             - name: Create Release
               uses: softprops/action-gh-release@v3
