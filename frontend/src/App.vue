@@ -92,14 +92,14 @@
             </TitlebarButton>
             <div class="w-8 h-px bg-border/60"></div>
             <div
-              class="writing-mode-vertical text-[10px] font-black tracking-[0.2em] text-muted-foreground/60 select-none">
+              class="writing-mode-vertical text-xs font-semibold tracking-wide text-muted-foreground select-none">
               控制面板
             </div>
           </div>
 
           <div v-show="!isSidebarCollapsed" class="h-full flex flex-col min-h-0">
             <div class="shrink-0 flex items-center justify-between px-4 pt-4 pb-2">
-              <div class="text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground/55">
+              <div class="text-xs font-semibold tracking-wide text-muted-foreground">
                 控制面板
               </div>
               <TitlebarButton
@@ -189,8 +189,11 @@
             <div class="max-h-52 overflow-y-auto whitespace-pre-wrap rounded-xl border border-border/70 bg-background/60 p-3 text-sm leading-6 text-muted-foreground">{{ updateInfo.releaseNotes }}</div>
           </div>
 
-          <p v-if="updateInfo?.available" class="text-xs leading-5 text-muted-foreground">
+          <p v-if="updateInfo?.available && !isLinux" class="text-xs leading-5 text-muted-foreground">
             安装包会先进行加密摘要校验。下载完成后应用将自动退出、替换并重新启动。
+          </p>
+          <p v-else-if="updateInfo?.available" class="text-xs leading-5 text-muted-foreground">
+            当前 Wails 版本无法自动替换运行中的 AppImage。下载新版本并覆盖原 AppImage 即可，旁边的 iOSGhostRun-data 目录会保留。
           </p>
 
           <div class="flex flex-wrap items-center justify-end gap-2">
@@ -205,10 +208,11 @@
             </button>
             <button v-else
               class="px-4 h-9 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
-              :disabled="isCheckingUpdate || isInstallingUpdate" @click="installUpdate">
-              {{ isInstallingUpdate ? '正在准备…' : '立即更新' }}
+              :disabled="isCheckingUpdate || isInstallingUpdate" @click="isLinux ? openReleasePage() : installUpdate()">
+              {{ isLinux ? '打开下载页面' : isInstallingUpdate ? '正在准备…' : '立即更新' }}
             </button>
           </div>
+          <p class="text-[10px] text-muted-foreground/70">界面使用 MiSans 字体，由小米提供。</p>
         </div>
       </div>
 
@@ -272,7 +276,7 @@ import {
   Cross1Icon,
   UpdateIcon
 } from '@radix-icons/vue'
-import { Events, System, Window } from '@wailsio/runtime'
+import { Browser, Events, System, Window } from '@wailsio/runtime'
 import type { RunningState, UpdateInfo } from '../bindings/iOSGhostRun/services/models'
 import { CheckForUpdate, DownloadAndInstall } from '../bindings/iOSGhostRun/services/updateservice'
 import MapEditor from './components/MapEditor.vue'
@@ -294,6 +298,7 @@ const isRunning = ref(false)
 const isLogCollapsed = ref(true)
 const showCloseDialog = ref(false)
 const isMacOS = ref(System.IsMac() || navigator.userAgent.includes('Mac OS X'))
+const isLinux = System.IsLinux()
 const showDeveloperModeAlert = ref(false)
 const developerModeAlertMessage = ref('')
 const isMaximized = ref(false)
@@ -392,6 +397,10 @@ async function installUpdate() {
     showError(`更新失败：${updateError.value}`, 6000)
     isInstallingUpdate.value = false
   }
+}
+
+function openReleasePage() {
+  void Browser.OpenURL('https://github.com/GH4NG/iOSGhostRun/releases/latest')
 }
 
 async function minimiseToTaskbar() {

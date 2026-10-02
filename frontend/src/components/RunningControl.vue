@@ -8,7 +8,7 @@
         </div>
         <div class="min-w-0">
           <span class="block text-xs font-black uppercase tracking-widest text-foreground/85">跑步控制</span>
-          <span class="block text-[10px] font-bold text-muted-foreground/55 mt-0.5">速度、偏移与循环策略</span>
+          <span class="block text-xs font-medium text-muted-foreground mt-0.5">速度、偏移与循环策略</span>
         </div>
       </div>
       <Badge :variant="isPaused ? 'warning' : isRunning ? 'default' : 'secondary'"
@@ -22,14 +22,14 @@
       <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
-            class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">平均速度</label>
+            class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">平均速度</label>
           <div class="flex items-center gap-2">
             <input v-model.number="displaySpeed" type="number" :min="speedRange.min" :max="speedRange.max"
               :step="speedRange.step" :disabled="isRunning"
               class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <Select v-model="speedUnit" :disabled="isRunning">
               <SelectTrigger size="sm"
-                class="w-[88px] border-border/50 bg-card/80 text-[10px] font-black uppercase tracking-wider">
+                class="w-[88px] border-border/50 bg-card/80 text-xs font-semibold">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -76,11 +76,11 @@
       <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
-            class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">循环圈数</label>
+            class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">循环圈数</label>
           <div class="flex items-baseline gap-2">
             <input v-model.number="loopCount" type="number" min="1" max="10" step="1" :disabled="isRunning"
               class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <span class="text-[10px] font-bold text-muted-foreground/40 uppercase text-right w-8">圈</span>
+            <span class="text-xs font-medium text-muted-foreground text-right w-8">圈</span>
           </div>
         </div>
         <Slider v-model="loopCountArray" :min="1" :max="10" :step="1" :disabled="isRunning" class="py-1" />
@@ -93,18 +93,18 @@
           class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent">
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-secondary/20 py-2">
-          <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Progress</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase">Progress</span>
           <span class="text-sm font-black mono tracking-tighter">{{ status.currentIndex }}/{{ status.totalPoints
             }}</span>
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-2">
-          <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Distance</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase">Distance</span>
           <span class="text-sm font-black mono tracking-tighter text-primary">{{
             formatDist(status.distance)
           }}</span>
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-secondary/20 py-2">
-          <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Time</span>
+          <span class="text-[11px] font-semibold text-muted-foreground uppercase">Time</span>
           <span class="text-sm font-black mono tracking-tighter">{{
             formatTimeValue(status.elapsedTimeMs)
           }}</span>

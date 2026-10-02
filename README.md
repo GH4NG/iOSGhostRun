@@ -63,4 +63,6 @@ wails3 package # 打包所有架构，不带 Console
 
 [MIT License](LICENSE)
 
+界面使用小米提供的 [MiSans 字体](https://hyperos.mi.com/font/zh/)，字体文件遵循小米的 [MiSans 字体知识产权许可协议](https://hyperos.mi.com/font/zh/download/)；项目的 MIT 许可证不适用于 MiSans 字体文件。
+
 **免责声明**：本软件仅供学习和研究使用，请自行承担使用风险。
