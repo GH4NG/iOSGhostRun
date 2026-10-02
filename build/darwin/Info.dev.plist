@@ -4,25 +4,25 @@
         <key>CFBundlePackageType</key>
             <string>APPL</string>
         <key>CFBundleName</key>
-            <string>My Product</string>
+            <string>iOSGhostRun</string>
         <key>CFBundleExecutable</key>
-            <string>test.exe</string>
+            <string>iOSGhostRun</string>
         <key>CFBundleIdentifier</key>
-            <string>com.example.test</string>
+            <string>com.iosghostrun.app</string>
         <key>CFBundleVersion</key>
-            <string>0.1.0</string>
+            <string>0.0.9</string>
         <key>CFBundleGetInfoString</key>
-            <string>This is a comment</string>
+            <string>跨平台  iOS 虚拟跑步应用</string>
         <key>CFBundleShortVersionString</key>
-            <string>0.1.0</string>
+            <string>0.0.9</string>
         <key>CFBundleIconFile</key>
             <string>icons</string>
         <key>LSMinimumSystemVersion</key>
-            <string>10.15.0</string>
+            <string>12.0.0</string>
         <key>NSHighResolutionCapable</key>
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
-            <string>© 2026, My Company</string>
+            <string>© 2026 iOSGhostRun</string>
         <key>NSAppTransportSecurity</key>
         <dict>
             <key>NSAllowsLocalNetworking</key>

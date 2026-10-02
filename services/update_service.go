@@ -14,10 +14,8 @@ import (
 	updatergithub "github.com/wailsapp/wails/v3/pkg/updater/providers/github"
 )
 
-const (
-	AppVersion        = "0.0.6"
-	updateManifestURL = "https://github.com/GH4NG/iOSGhostRun/releases/latest/download/update.json"
-)
+// updateManifestURL 更新清单地址
+const updateManifestURL = "https://github.com/GH4NG/iOSGhostRun/releases/latest/download/update.json"
 
 type UpdateInfo struct {
 	Available      bool   `json:"available"`
@@ -43,7 +41,7 @@ func NewUpdateService() *UpdateService {
 
 // ConfigureUpdateService connects the service to the updater owned by the
 // Wails application. It is a package function, so it is not a frontend RPC.
-func ConfigureUpdateService(service *UpdateService, engine *updater.Updater) error {
+func ConfigureUpdateService(service *UpdateService, engine *updater.Updater, currentVersion string) error {
 	if service == nil || engine == nil {
 		return errors.New("初始化更新服务失败")
 	}
@@ -69,7 +67,7 @@ func ConfigureUpdateService(service *UpdateService, engine *updater.Updater) err
 		return fmt.Errorf("创建 GitHub 更新源失败: %w", err)
 	}
 	if err := engine.Init(updater.Config{
-		CurrentVersion: AppVersion,
+		CurrentVersion: currentVersion,
 		Providers:      []updater.Provider{provider, githubProvider},
 		Window:         updater.WindowNone,
 	}); err != nil {

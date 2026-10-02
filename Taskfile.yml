@@ -10,6 +10,8 @@ vars:
     APP_NAME: 'iOSGhostRun'
     BIN_DIR: 'bin'
     VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
+    APP_VERSION:
+        sh: git describe --tags --abbrev=0 2>/dev/null || echo dev
 
 tasks:
     build:

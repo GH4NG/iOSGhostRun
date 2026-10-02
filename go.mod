@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/danielpaulus/go-ios v1.3.2
-	github.com/wailsapp/wails/v3 v3.0.0-beta.26
+	github.com/wailsapp/wails/v3 v3.0.0-beta.27
 )
 
 require (

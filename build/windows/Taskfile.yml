@@ -26,7 +26,7 @@ tasks:
             - cmd: rm -f wails_windows_{{.ARCH}}.syso
               platforms: [linux, darwin]
         vars:
-            BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui"{{else}}-buildvcs=false -gcflags=all="-l"{{end}}'
+            BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui -X main.version={{.APP_VERSION | trimPrefix "v"}}"{{else}}-buildvcs=false -gcflags=all="-l" -ldflags="-X main.version={{.APP_VERSION | trimPrefix "v"}}"{{end}}'
             ARCH: '{{.ARCH | default ARCH}}'
         env:
             GOOS: windows

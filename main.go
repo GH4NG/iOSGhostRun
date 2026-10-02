@@ -13,6 +13,8 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
+var version = "dev"
+
 //go:embed all:frontend/dist
 var assets embed.FS
 
@@ -88,7 +90,7 @@ func main() {
 			ApplicationID: "com.iosghostrun.app",
 		},
 	})
-	if err := services.ConfigureUpdateService(updateSvc, app.Updater); err != nil {
+	if err := services.ConfigureUpdateService(updateSvc, app.Updater, version); err != nil {
 		log.Fatalf("配置应用更新失败: %v", err)
 	}
 
