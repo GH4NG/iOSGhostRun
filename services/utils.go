@@ -10,60 +10,10 @@ import (
 	"github.com/danielpaulus/go-ios/ios"
 )
 
-// ResolveAppDir 返回应用的可写目录，用于存放指定子目录的数据。
-//
-// 目录选择优先级：
-//  1. 可执行文件同级目录
-//  2. 系统推荐的用户配置目录
-//  3. 用户主目录
-//  4. 当前工作目录
-//
-// 在任意一级成功创建目录后立即返回。
+// ResolveAppDir 返回启动时选定的数据根目录下的子目录。
+// InitializeDataDirectory 必须在启动 Wails 服务前调用。
 func ResolveAppDir(subdir string) string {
-	const appName = "iosghostrun"
-
-	// 可执行文件同级目录
-	if exePath, err := os.Executable(); err == nil {
-		exeDir := filepath.Dir(exePath)
-		dir := filepath.Join(exeDir, subdir)
-		if err := os.MkdirAll(dir, 0755); err == nil {
-			return dir
-		}
-	}
-
-	// 用户配置目录
-	if configDir, err := os.UserConfigDir(); err == nil {
-		var dir string
-
-		switch runtime.GOOS {
-		case "windows":
-			// %AppData%\iosghostrun\subdir
-			dir = filepath.Join(configDir, appName, subdir)
-		case "darwin":
-			// ~/Library/Application Support/iosghostrun/subdir
-			dir = filepath.Join(configDir, appName, subdir)
-		default:
-			// Linux / Unix: ~/.config/iosghostrun/subdir
-			dir = filepath.Join(configDir, appName, subdir)
-		}
-
-		if err := os.MkdirAll(dir, 0755); err == nil {
-			return dir
-		}
-	}
-
-	// 用户主目录兜底
-	if homeDir, err := os.UserHomeDir(); err == nil {
-		dir := filepath.Join(homeDir, "."+appName, subdir)
-		if err := os.MkdirAll(dir, 0755); err == nil {
-			return dir
-		}
-	}
-
-	// 相对路径兜底
-	dir := filepath.Join(subdir)
-	_ = os.MkdirAll(dir, 0755)
-	return dir
+	return filepath.Join(dataDirectory, subdir)
 }
 
 // GetDeviceAndVersion 获取设备和版本信息
@@ -84,19 +34,6 @@ func GetDeviceAndVersion(udid string) (ios.DeviceEntry, *semver.Version, error) 
 	}
 
 	return device, ver, nil
-}
-
-// IsVersionAbove17 检查设备版本是否在 iOS 17 以上
-func IsVersionAbove17(udid string) bool {
-	device, err := ios.GetDevice(udid)
-	if err != nil {
-		return false
-	}
-	version, err := ios.GetProductVersion(device)
-	if err != nil {
-		return false
-	}
-	return version.Major() >= 17
 }
 
 // GetDeviceInfo 获取设备信息

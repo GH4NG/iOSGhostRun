@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
+	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -45,11 +46,7 @@ func ConfigureUpdateService(service *UpdateService, engine *updater.Updater, cur
 	if service == nil || engine == nil {
 		return errors.New("初始化更新服务失败")
 	}
-	applySystemProxy("UpdateService")
-	updateHTTPClient := &http.Client{
-		Transport: http.DefaultTransport,
-		Timeout:   30 * time.Second,
-	}
+	updateHTTPClient := newDownloadHTTPClient(30 * time.Second)
 	provider, err := endpoint.New(endpoint.Config{
 		URL:        updateManifestURL,
 		Channel:    "stable",
@@ -86,7 +83,6 @@ func (s *UpdateService) CheckForUpdate() (UpdateInfo, error) {
 	if s.engine == nil {
 		return UpdateInfo{}, errors.New("更新服务尚未初始化")
 	}
-	applySystemProxy("UpdateService")
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 	release, err := s.engine.Check(ctx)
@@ -120,7 +116,9 @@ func (s *UpdateService) DownloadAndInstall(version string) error {
 	if strings.TrimPrefix(strings.TrimSpace(version), "v") != strings.TrimPrefix(s.pending.Version, "v") {
 		return errors.New("发布版本已变化，请重新检查更新")
 	}
-	applySystemProxy("UpdateService")
+	if runtime.GOOS == "linux" && os.Getenv("APPIMAGE") != "" {
+		return errors.New("当前 Wails 版本无法替换运行中的 AppImage，请从 GitHub Releases 下载新版本并覆盖原 AppImage")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 	if err := s.engine.DownloadAndInstall(ctx); err != nil {

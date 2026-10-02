@@ -33,6 +33,13 @@ func init() {
 }
 
 func main() {
+	services.ConfigureDownloadProxy()
+	dataRoot, err := services.InitializeDataDirectory()
+	if err != nil {
+		log.Fatalf("初始化数据目录失败: %v", err)
+	}
+	log.Printf("应用数据目录: %s", dataRoot)
+
 	// 创建服务实例
 	loggerSvc := services.NewLoggerService()
 	devicesSvc := services.NewDevicesService()
@@ -82,6 +89,9 @@ func main() {
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
+		},
+		Windows: application.WindowsOptions{
+			WebviewUserDataPath: services.ResolveAppDir("webview"),
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
@@ -133,7 +143,7 @@ func main() {
 	})
 
 	// Run the application. This blocks until the application has been exited.
-	err := app.Run()
+	err = app.Run()
 	// If an error occurred while running the application, log it and exit.
 	if err != nil {
 		log.Fatal(err)

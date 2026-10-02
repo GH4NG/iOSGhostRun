@@ -74,7 +74,6 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 		Log.Info("ImageService", "开发者镜像已挂载 (personalized)，跳过")
 		return nil
 	}
-	applySystemProxy("ImageService")
 	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
 	if err != nil {
 		return fmt.Errorf("获取开发者镜像失败: %w", err)
@@ -90,8 +89,6 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 
 // mountDeveloperImage 挂载开发者镜像
 func mountDeveloperImage(device ios.DeviceEntry) error {
-
-	applySystemProxy("ImageService")
 
 	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
 	if err != nil {
