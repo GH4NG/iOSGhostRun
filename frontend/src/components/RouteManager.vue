@@ -1,11 +1,11 @@
 <template>
-  <Card class="flex flex-col gap-0 p-0 bg-card border-none shadow-none text-foreground">
+  <Card class="flex flex-col gap-0 p-0 bg-card border-none shadow-none font-sans text-foreground">
     <div class="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-border/40">
       <div class="flex min-w-0 items-center gap-2">
         <div class="shrink-0 p-1.5 rounded-lg bg-primary/10">
           <PinFilledIcon class="w-5 h-5 text-primary" />
         </div>
-        <span class="text-xs font-black uppercase tracking-widest text-foreground/80">当前路线</span>
+        <span class="text-sm font-semibold tracking-tight text-foreground/80">当前路线</span>
       </div>
       <div class="flex shrink-0 items-center gap-1">
         <Tooltip>
@@ -59,14 +59,14 @@
       <div v-if="showImport"
         class="flex flex-col gap-3 p-4 bg-secondary/10 rounded-xl border border-border/40 animate-in fade-in slide-in-from-top-2">
         <div>
-          <div class="text-xs font-semibold text-muted-foreground mb-2">
+          <div class="text-xs font-medium text-muted-foreground mb-2">
             坐标系选择
           </div>
           <div class="relative">
             <Button variant="outline" size="sm"
-              class="h-8 text-xs w-full justify-between bg-background border-border/40"
+              class="h-8 text-xs font-medium w-full justify-between bg-background border-border/40"
               @click="showCoordSystemMenu = !showCoordSystemMenu">
-              <span class="text-xs">
+              <span class="text-xs font-medium">
                 {{ coordSystemLabel }}
               </span>
               <span>▼</span>
@@ -74,22 +74,22 @@
             <div v-if="showCoordSystemMenu"
               class="absolute top-full left-0 right-0 mt-1 bg-background border border-border/40 rounded-lg shadow-lg z-50">
               <button @click="selectCoordSystem('wgs84')"
-                class="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors">
+                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors">
                 WGS84(GPS标准)
               </button>
               <button @click="selectCoordSystem('gcj02')"
-                class="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors">
+                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors">
                 GCJ-02(高德/腾讯)
               </button>
               <button @click="selectCoordSystem('bd09')"
-                class="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors last:rounded-b-lg">
+                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors last:rounded-b-lg">
                 BD09(百度)
               </button>
             </div>
           </div>
         </div>
         <div>
-          <div class="text-xs font-semibold text-muted-foreground mb-2">
+          <div class="text-xs font-medium text-muted-foreground mb-2">
             粘贴路线数据 (JSON)
           </div>
           <textarea v-model="importText" placeholder='{"lng":"116.29","lat":"40.00"}, ...'
@@ -104,7 +104,7 @@
       <!-- 保存路线 -->
       <div class="flex gap-2">
         <Input v-model="newRouteName" type="text" placeholder="给这条线路起个名字..."
-          class="min-w-0 h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all text-sm font-medium"
+          class="min-w-0 h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all font-sans text-sm font-medium"
           @keydown.enter="saveCurrentRoute" />
         <Tooltip>
           <TooltipTrigger asChild>
@@ -121,7 +121,7 @@
       <!-- 已保存路线列表 -->
       <div class="flex flex-col gap-4">
         <div class="flex items-center justify-between px-1">
-          <span class="text-xs font-semibold text-muted-foreground">已保存列表</span>
+          <span class="text-xs font-medium text-muted-foreground">已保存列表</span>
           <Badge variant="outline"
             class="text-[11px] h-5 font-semibold bg-secondary/10 text-muted-foreground border-none">{{ savedRoutes.length
             }}</Badge>
@@ -146,12 +146,12 @@
                 :class="activeRouteName === route.name ? 'text-primary' : 'text-primary/40'" />
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-bold truncate group-hover:text-primary transition-colors tracking-tight">
+              <div class="text-sm font-semibold truncate group-hover:text-primary transition-colors tracking-tight">
                 {{ route.name }}
               </div>
-              <div class="text-xs font-medium text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
+              <div class="text-xs font-normal text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
                 <span v-if="activeRouteName === route.name" class="text-primary">当前</span>
-                <span>{{ route.points.length }} <span class="font-bold">PTS</span></span>
+                <span>{{ route.points.length }} <span class="font-medium">PTS</span></span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
                 <span>{{ formatDist(calculateDist(route.points)) }}</span>
               </div>

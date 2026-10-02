@@ -1,17 +1,17 @@
 <template>
-  <Card class="flex flex-col gap-0 p-0 overflow-hidden border-border/60 bg-card/90 shadow-xl shadow-black/5 ring-1 ring-white/5">
+  <Card class="flex flex-col gap-0 p-0 overflow-hidden border-border/60 bg-card/90 shadow-xl shadow-black/5 ring-1 ring-white/5 font-sans">
     <div class="relative flex items-center justify-between gap-2 p-4 border-b border-border/40 bg-card/95">
       <div class="flex items-center gap-3">
         <div class="p-2 rounded-2xl bg-primary/10 border border-primary/15 shadow-inner shadow-primary/10">
           <MobileIcon class="w-5 h-5 text-primary" />
         </div>
         <div class="min-w-0">
-          <span class="block text-xs font-black uppercase tracking-widest text-foreground/85">设备管理</span>
-          <span class="block text-[10px] font-bold text-muted-foreground/55 mt-0.5">USB 连接与镜像状态</span>
+          <span class="block text-sm font-semibold tracking-tight text-foreground/90">设备管理</span>
+          <span class="block text-xs font-medium text-muted-foreground mt-0.5">USB 连接与镜像状态</span>
         </div>
       </div>
       <Badge v-if="devices.length > 0" variant="outline"
-        class="mr-1 h-5 rounded-full border-primary/20 bg-primary/10 px-2 text-[9px] font-black text-primary">
+        class="mr-1 h-6 rounded-full border-primary/35 bg-primary/15 px-2.5 text-xs font-semibold text-primary">
         {{ devices.length }} 台</Badge>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -31,8 +31,8 @@
         class="mb-4 flex h-14 w-14 items-center justify-center rounded-3xl border border-dashed border-border/60 bg-background/70">
         <MobileIcon class="h-7 w-7 text-muted-foreground/30" />
       </div>
-      <p class="text-sm font-bold text-foreground/75">{{ loading ? '正在检测设备...' : '未检测到 iOS 设备' }}</p>
-      <p class="text-xs leading-relaxed text-muted-foreground/55 mt-1.5">请确保设备已通过 USB 连接并信任此电脑</p>
+      <p class="text-sm font-semibold text-foreground/90">{{ loading ? '正在检测设备...' : '未检测到 iOS 设备' }}</p>
+      <p class="text-xs leading-relaxed text-muted-foreground mt-1.5">请确保设备已通过 USB 连接并信任此电脑</p>
     </div>
 
     <div v-else class="flex flex-col gap-3 p-4 overflow-y-auto max-h-[300px] no-scrollbar bg-card/70">
@@ -50,10 +50,10 @@
             <MobileIcon class="w-6 h-6 text-primary/80" />
           </div>
           <div class="flex-1 min-w-0">
-            <div class="text-sm font-bold tracking-tight truncate">
+            <div class="text-sm font-semibold tracking-tight truncate">
               {{ device.DeviceName || '未知设备' }}
             </div>
-            <div class="text-[10px] uppercase font-bold text-muted-foreground/60 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <div class="text-xs font-medium text-foreground/75 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
               <span>{{ device.ProductType }}</span>
               <span class="w-1 h-1 rounded-full bg-border"></span>
               <span>iOS {{ device.ProductVersion }}</span>
@@ -63,10 +63,10 @@
         <div v-if="selectedUdid === device.UDID"
           class="flex gap-2 mt-4 pl-1 animate-in fade-in slide-in-from-top-2 duration-500">
           <Badge variant="outline"
-            class="bg-primary/20 text-primary border-primary/30 text-[9px] font-black uppercase py-0 h-5 rounded-full px-2 tracking-tighter">
+            class="bg-primary/15 text-primary border-primary/40 text-xs font-semibold py-0 h-6 rounded-full px-2.5">
             已选择</Badge>
           <Badge v-if="imageMounted" variant="outline"
-            class="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 text-[9px] font-black uppercase py-0 h-5 rounded-full px-2 tracking-tighter">
+            class="bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-700/40 dark:border-emerald-300/40 text-xs font-semibold py-0 h-6 rounded-full px-2.5">
             镜像已就绪</Badge>
         </div>
       </div>

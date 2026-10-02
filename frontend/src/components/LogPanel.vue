@@ -1,11 +1,11 @@
 <template>
-  <div class="log-panel flex flex-col h-full bg-card overflow-hidden text-foreground">
+  <div class="log-panel flex flex-col h-full bg-card overflow-hidden text-foreground font-sans">
     <div class="log-toolbar flex shrink-0 flex-wrap justify-between items-center gap-2 p-2 border-b border-border/30 bg-secondary/5">
       <div class="log-filters flex flex-wrap gap-1">
         <Tooltip v-for="lv in levels" :key="lv">
           <TooltipTrigger asChild>
             <button
-              class="log-filter h-7 min-w-10 px-2 items-center justify-center rounded-lg text-[10px] font-black uppercase tracking-widest transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50"
+              class="log-filter h-7 min-w-10 px-2 items-center justify-center rounded-lg text-xs font-semibold uppercase transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50"
               :class="[
                 lv === filterLevel
                   ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
@@ -21,7 +21,7 @@
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="sm" aria-label="导出日志"
-              class="h-7 gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20 rounded-lg px-2"
+              class="h-7 gap-1.5 text-xs font-semibold uppercase text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20 rounded-lg px-2"
               @click="exportLogs">
               <CopyIcon class="w-3.5 h-3.5" />
               <span class="log-action-label">Export</span>
@@ -32,7 +32,7 @@
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="sm" aria-label="清空日志"
-              class="h-7 gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all border border-transparent hover:border-destructive/20 rounded-lg px-2"
+              class="h-7 gap-1.5 text-xs font-semibold uppercase text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all border border-transparent hover:border-destructive/20 rounded-lg px-2"
               @click="clearLogs">
               <TrashIcon class="w-3.5 h-3.5" />
               <span class="log-action-label">Clear</span>
@@ -44,24 +44,24 @@
     </div>
 
     <div ref="logContainer"
-      class="log-list flex-1 min-h-0 overflow-y-auto p-2 font-mono text-[11px] leading-relaxed select-text bg-background/30 selection:bg-primary/20">
+      class="log-list app-scrollbar flex-1 min-h-0 overflow-y-auto p-2 font-sans text-[13px] leading-relaxed select-text bg-background/30 selection:bg-primary/20">
       <div v-for="(log, index) in filteredLogs" :key="index"
         class="group mb-1 py-1 rounded-lg px-2 transition-all border border-transparent hover:bg-secondary/20 flex gap-3 items-baseline"
         :class="getLogClass(log.level)">
         <span
-          class="text-muted-foreground/30 font-black tracking-tighter w-16 shrink-0 select-none group-hover:text-muted-foreground/60 transition-colors">
+          class="text-muted-foreground font-medium w-16 shrink-0 select-none">
           {{ log.time.split(' ')[1] || log.time }}
         </span>
         <div class="flex-1 min-w-0">
           <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-0.5">
             <span
-              class="font-black uppercase tracking-[0.1em] text-[9px] opacity-80 decoration-2 decoration-primary/20">{{
+              class="font-semibold text-xs">{{
               log.level }}</span>
             <span
-              class="text-blue-500/50 font-bold uppercase tracking-widest text-[9px] bg-blue-500/5 px-1.5 rounded border border-blue-500/10">{{
+              class="text-blue-700 dark:text-blue-300 font-semibold text-xs bg-blue-500/10 px-1.5 rounded border border-blue-500/20">{{
                 log.module }}</span>
           </div>
-          <p class="text-foreground/80 break-all whitespace-pre-wrap leading-relaxed">{{ log.message }}</p>
+          <p class="text-foreground break-all whitespace-pre-wrap leading-relaxed">{{ log.message }}</p>
         </div>
       </div>
     </div>
@@ -132,11 +132,11 @@ function getLogClass(level: string) {
     case 'error':
       return 'bg-destructive/10 text-destructive border-destructive/50'
     case 'warn':
-      return 'bg-amber-500/10 text-amber-500 border-amber-500/50'
+      return 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/50'
     case 'info':
-      return 'text-emerald-500 border-emerald-500/30'
+      return 'text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
     case 'debug':
-      return 'text-purple-400 border-purple-400/30'
+      return 'text-purple-700 dark:text-purple-300 border-purple-400/30'
     default:
       return ''
   }

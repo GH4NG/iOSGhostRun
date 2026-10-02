@@ -1,5 +1,5 @@
 <template>
-  <div class="map-editor relative w-full h-full bg-secondary/5 overflow-hidden text-foreground">
+  <div class="map-editor relative w-full h-full bg-secondary/5 overflow-hidden text-foreground font-sans">
     <div class="map-overlays">
       <div class="map-toolbar">
         <!-- 搜索栏-->
@@ -21,7 +21,7 @@
                     <MagnifyingGlassIcon class="w-6 h-6" />
                   </Button>
                   <Input v-if="isSearchExpanded" v-model="searchQuery" type="text" placeholder="搜索地点…"
-                    class="h-9 min-w-0 border-none bg-transparent focus-visible:ring-0 text-xs font-black tracking-widest placeholder:text-muted-foreground/30 animate-in fade-in slide-in-from-left-2 duration-500"
+                    class="h-9 min-w-0 border-none bg-transparent focus-visible:ring-0 text-sm font-medium tracking-normal placeholder:text-muted-foreground/55 animate-in fade-in slide-in-from-left-2 duration-500"
                     @keydown.enter="searchLocation" autofocus />
                 </div>
               </TooltipTrigger>
@@ -34,9 +34,9 @@
               leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100"
               leave-to-class="opacity-0 -translate-y-2 scale-95">
               <Card v-if="isSearchExpanded && searchResults.length"
-                class="map-search-results absolute top-full mt-2 w-full max-h-64 overflow-y-auto z-30 shadow-2xl border-border/30 bg-card/95 backdrop-blur-xl ring-1 ring-white/10 p-1.5 flex flex-col gap-1">
+                class="map-search-results app-scrollbar absolute top-full mt-2 w-full max-h-64 overflow-y-auto z-30 shadow-2xl border-border/30 bg-card/95 backdrop-blur-xl ring-1 ring-white/10 p-1.5 flex flex-col gap-1">
                 <div v-for="(result, idx) in searchResults" :key="idx"
-                  class="px-4 py-3 text-[10px] font-black uppercase tracking-wider cursor-pointer rounded-xl transition-colors hover:bg-primary/10 hover:text-primary leading-tight"
+                  class="px-4 py-3 text-xs font-medium cursor-pointer rounded-xl transition-colors hover:bg-primary/10 hover:text-primary leading-normal"
                   @click="selectSearchResult(result)">
                   {{ result.display_name }}
                 </div>
@@ -96,7 +96,7 @@
             <Card v-show="!isLayerSwitcherCollapsed"
               class="absolute top-full right-0 mt-2 z-30 w-48 overflow-hidden shadow-2xl border-border/30 bg-card/95 backdrop-blur-xl ring-1 ring-white/10 p-1.5 flex flex-col gap-1">
               <div v-for="layer in availableLayers" :key="layer.id"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all text-[11px] font-bold uppercase tracking-wider"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all text-xs font-semibold"
                 :class="[
                   currentLayerId === layer.id
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
@@ -118,8 +118,8 @@
             <div class="flex items-center gap-2.5">
               <DrawingPinIcon class="w-4 h-4 text-primary" />
               <div class="flex items-baseline gap-1">
-                <span class="text-sm font-black mono tracking-tighter break-all">{{ routePoints.length }}</span>
-                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">Pts</span>
+                <span class="text-sm font-semibold mono tracking-tight break-all">{{ routePoints.length }}</span>
+                <span class="text-[11px] font-medium tracking-wide text-muted-foreground/70">PTS</span>
               </div>
             </div>
 
@@ -129,10 +129,10 @@
             <div class="flex items-center gap-2.5 min-w-0">
               <RulerHorizontalIcon class="w-4 h-4 text-primary" />
               <div class="flex items-baseline gap-1">
-                <span class="text-sm font-black mono tracking-tighter text-primary break-all">{{
+                <span class="text-sm font-semibold mono tracking-tight text-primary break-all">{{
                   formattedDistance.split(' ')[0]
                 }}</span>
-                <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">{{
+                <span class="text-[11px] font-medium tracking-wide text-muted-foreground/70">{{
                   formattedDistance.split(' ')[1]
                 }}</span>
               </div>
@@ -147,7 +147,7 @@
             :class="{ 'border-b': !isRouteCollapsed }"
             @click="isRouteCollapsed = !isRouteCollapsed">
             <div
-              class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
+              class="flex items-center gap-2 text-xs font-semibold tracking-normal text-muted-foreground group-hover:text-foreground transition-colors">
               <div class="p-1 rounded-md bg-primary/10">
                 <ChevronDownIcon v-if="!isRouteCollapsed" class="w-3.5 h-3.5 text-primary" />
                 <ChevronUpIcon v-else class="w-3.5 h-3.5 text-primary" />
@@ -155,12 +155,12 @@
               <span class="whitespace-nowrap text-foreground/80">路线管理</span>
             </div>
             <Badge variant="secondary"
-              class="shrink-0 text-[10px] font-black px-2 h-5 rounded-md bg-primary/20 text-primary border-primary/20">
+              class="shrink-0 text-[11px] font-semibold px-2 h-5 rounded-md bg-primary/20 text-primary border-primary/20">
               {{ routePoints.length }}
               <span class="ml-1 opacity-60">PTS</span>
             </Badge>
           </button>
-          <div id="route-panel-content" v-show="!isRouteCollapsed" class="map-route-content min-h-0 overflow-y-auto overscroll-contain">
+          <div id="route-panel-content" v-show="!isRouteCollapsed" class="map-route-content app-scrollbar min-h-0 overflow-y-auto overscroll-contain">
             <RouteManager v-model="routePoints" :current-layer-id="currentLayerId" @locating-point="onLocatingPoint" />
           </div>
         </Card>

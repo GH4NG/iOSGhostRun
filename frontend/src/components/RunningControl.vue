@@ -1,18 +1,18 @@
 <template>
   <Card
-    class="flex flex-col gap-0 p-0 bg-card/90 border-border/60 shadow-xl shadow-black/5 overflow-hidden text-foreground ring-1 ring-white/5">
+    class="flex flex-col gap-0 p-0 bg-card/90 border-border/60 shadow-xl shadow-black/5 overflow-hidden text-foreground ring-1 ring-white/5 font-sans">
     <div class="relative flex items-center justify-between gap-2 p-4 border-b border-border/40 bg-card/95">
       <div class="flex items-center gap-3">
         <div class="p-2 rounded-2xl bg-primary/10 border border-primary/15 shadow-inner shadow-primary/10">
           <ActivityLogIcon class="w-5 h-5 text-primary" />
         </div>
         <div class="min-w-0">
-          <span class="block text-xs font-black uppercase tracking-widest text-foreground/85">跑步控制</span>
-          <span class="block text-[10px] font-bold text-muted-foreground/55 mt-0.5">速度、偏移与循环策略</span>
+          <span class="block text-sm font-semibold tracking-tight text-foreground/90">跑步控制</span>
+          <span class="block text-xs font-medium text-muted-foreground mt-0.5">速度、偏移与循环策略</span>
         </div>
       </div>
       <Badge :variant="isPaused ? 'warning' : isRunning ? 'default' : 'secondary'"
-        class="text-[9px] font-black px-2.5 py-0 h-5 rounded-full border-none shadow-sm shadow-black/5">
+        class="text-[11px] font-semibold px-2.5 py-0 h-5 rounded-full border-none shadow-sm shadow-black/5">
         {{ statusText }}
       </Badge>
     </div>
@@ -22,14 +22,14 @@
       <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
-            class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">平均速度</label>
+            class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">平均速度</label>
           <div class="flex items-center gap-2">
             <input v-model.number="displaySpeed" type="number" :min="speedRange.min" :max="speedRange.max"
               :step="speedRange.step" :disabled="isRunning"
               class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <Select v-model="speedUnit" :disabled="isRunning">
               <SelectTrigger size="sm"
-                class="w-[88px] border-border/50 bg-card/80 text-[10px] font-black uppercase tracking-wider">
+                class="w-[88px] border-border/50 bg-card/80 text-sm font-medium">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -76,11 +76,11 @@
       <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
-            class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">循环圈数</label>
+            class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">循环圈数</label>
           <div class="flex items-baseline gap-2">
             <input v-model.number="loopCount" type="number" min="1" max="10" step="1" :disabled="isRunning"
               class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <span class="text-[10px] font-bold text-muted-foreground/40 uppercase text-right w-8">圈</span>
+            <span class="text-xs font-medium text-muted-foreground text-right w-8">圈</span>
           </div>
         </div>
         <Slider v-model="loopCountArray" :min="1" :max="10" :step="1" :disabled="isRunning" class="py-1" />
@@ -93,19 +93,19 @@
           class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent">
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-secondary/20 py-2">
-          <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Progress</span>
-          <span class="text-sm font-black mono tracking-tighter">{{ status.currentIndex }}/{{ status.totalPoints
+          <span class="text-xs font-medium text-muted-foreground">Progress</span>
+          <span class="text-sm font-semibold mono tracking-tight">{{ status.currentIndex }}/{{ status.totalPoints
             }}</span>
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-2">
-          <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Distance</span>
-          <span class="text-sm font-black mono tracking-tighter text-primary">{{
+          <span class="text-xs font-medium text-muted-foreground">Distance</span>
+          <span class="text-sm font-semibold mono tracking-tight text-primary">{{
             formatDist(status.distance)
           }}</span>
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-secondary/20 py-2">
-          <span class="text-[9px] font-black text-muted-foreground uppercase opacity-40">Time</span>
-          <span class="text-sm font-black mono tracking-tighter">{{
+          <span class="text-xs font-medium text-muted-foreground">Time</span>
+          <span class="text-sm font-semibold mono tracking-tight">{{
             formatTimeValue(status.elapsedTimeMs)
           }}</span>
         </div>
@@ -116,7 +116,7 @@
         <Tooltip v-if="!isRunning && !isPaused">
           <TooltipTrigger asChild>
             <Button
-              class="flex-1 h-12 gap-2 text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+              class="flex-1 h-12 gap-2 text-sm font-semibold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
               :disabled="!canStart" @click="startRun">
               <PlayIcon class="w-4 h-4 fill-current" />
               <span>开始任务</span>
@@ -128,7 +128,7 @@
         <Tooltip v-if="isRunning">
           <TooltipTrigger asChild>
             <Button variant="secondary"
-              class="flex-1 h-12 gap-2 text-xs font-black uppercase tracking-widest bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 transition-all hover:scale-105 active:scale-95"
+              class="flex-1 h-12 gap-2 text-sm font-semibold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 transition-all hover:scale-105 active:scale-95"
               @click="pauseRun">
               <PauseIcon class="w-4 h-4 fill-current" />
               <span>暂停</span>
@@ -140,7 +140,7 @@
         <Tooltip v-if="isPaused">
           <TooltipTrigger asChild>
             <Button
-              class="flex-1 h-12 gap-2 text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+              class="flex-1 h-12 gap-2 text-sm font-semibold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
               @click="resumeRun">
               <PlayIcon class="w-4 h-4 fill-current" />
               <span>恢复</span>
@@ -152,7 +152,7 @@
         <Tooltip v-if="isRunning || isPaused">
           <TooltipTrigger asChild>
             <Button variant="destructive"
-              class="flex-1 h-12 gap-2 text-xs font-black uppercase tracking-widest shadow-lg shadow-destructive/20 transition-all hover:scale-105 active:scale-95"
+              class="flex-1 h-12 gap-2 text-sm font-semibold shadow-lg shadow-destructive/20 transition-all hover:scale-105 active:scale-95"
               @click="stopRun">
               <StopIcon class="w-4 h-4 fill-current" />
               <span>停止</span>
