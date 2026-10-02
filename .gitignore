@@ -2,10 +2,13 @@
 .agent
 .shared
 bin
-frontend/bun.lock
-frontend/package-lock.json
 frontend/bindings
 frontend/dist
 frontend/node_modules
 build/linux/appimage/build
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+*.syso
+.idea/
+.vscode/
+.DS_Store
+AGENTS.md

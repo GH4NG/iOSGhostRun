@@ -12,7 +12,7 @@ tasks:
         dir: frontend
         sources:
             - package.json
-            - package-lock.json
+            - bun.lock
         generates:
             - node_modules
         preconditions:
