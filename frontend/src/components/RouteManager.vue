@@ -32,6 +32,17 @@
 
         <Tooltip>
           <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="导出当前路线"
+              class="w-8 h-8 rounded-full hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
+              :disabled="routePoints.length === 0" @click="exportRoute(routePoints)">
+              <UploadIcon class="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">导出当前路线到剪贴板</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="清空当前路线"
               class="w-8 h-8 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
               :disabled="routePoints.length === 0" @click="executeClearRoute">
@@ -48,12 +59,12 @@
       <div v-if="showImport"
         class="flex flex-col gap-3 p-4 bg-secondary/10 rounded-xl border border-border/40 animate-in fade-in slide-in-from-top-2">
         <div>
-          <div class="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest mb-2">
+          <div class="text-xs font-semibold text-muted-foreground mb-2">
             坐标系选择
           </div>
           <div class="relative">
             <Button variant="outline" size="sm"
-              class="h-8 text-[10px] w-full justify-between bg-background border-border/40"
+              class="h-8 text-xs w-full justify-between bg-background border-border/40"
               @click="showCoordSystemMenu = !showCoordSystemMenu">
               <span class="text-xs">
                 {{ coordSystemLabel }}
@@ -63,37 +74,37 @@
             <div v-if="showCoordSystemMenu"
               class="absolute top-full left-0 right-0 mt-1 bg-background border border-border/40 rounded-lg shadow-lg z-50">
               <button @click="selectCoordSystem('wgs84')"
-                class="w-full px-3 py-2 text-left text-[10px] hover:bg-primary/10 hover:text-primary transition-colors">
+                class="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors">
                 WGS84(GPS标准)
               </button>
               <button @click="selectCoordSystem('gcj02')"
-                class="w-full px-3 py-2 text-left text-[10px] hover:bg-primary/10 hover:text-primary transition-colors">
+                class="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors">
                 GCJ-02(高德/腾讯)
               </button>
               <button @click="selectCoordSystem('bd09')"
-                class="w-full px-3 py-2 text-left text-[10px] hover:bg-primary/10 hover:text-primary transition-colors last:rounded-b-lg">
+                class="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary transition-colors last:rounded-b-lg">
                 BD09(百度)
               </button>
             </div>
           </div>
         </div>
         <div>
-          <div class="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest mb-2">
+          <div class="text-xs font-semibold text-muted-foreground mb-2">
             粘贴路线数据 (JSON)
           </div>
           <textarea v-model="importText" placeholder='{"lng":"116.29","lat":"40.00"}, ...'
-            class="w-full min-w-0 min-h-[100px] p-3 text-[10px] font-mono bg-background border border-border/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 resize-y"></textarea>
+            class="w-full min-w-0 min-h-[100px] p-3 text-xs font-mono bg-background border border-border/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 resize-y"></textarea>
         </div>
         <div class="flex gap-2 mt-2">
-          <Button size="sm" class="flex-1 h-8 text-[10px] font-bold" @click="handleImport">确认导入</Button>
-          <Button size="sm" variant="ghost" class="h-8 text-[10px] font-bold" @click="showImport = false">取消</Button>
+          <Button size="sm" class="flex-1 h-8 text-xs font-semibold" @click="handleImport">确认导入</Button>
+          <Button size="sm" variant="ghost" class="h-8 text-xs font-semibold" @click="showImport = false">取消</Button>
         </div>
       </div>
 
       <!-- 保存路线 -->
       <div class="flex gap-2">
         <Input v-model="newRouteName" type="text" placeholder="给这条线路起个名字..."
-          class="min-w-0 h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all text-xs font-medium"
+          class="min-w-0 h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all text-sm font-medium"
           @keydown.enter="saveCurrentRoute" />
         <Tooltip>
           <TooltipTrigger asChild>
@@ -110,36 +121,51 @@
       <!-- 已保存路线列表 -->
       <div class="flex flex-col gap-4">
         <div class="flex items-center justify-between px-1">
-          <span class="text-[10px] font-black text-muted-foreground/50 uppercase tracking-[0.2em]">已保存列表</span>
+          <span class="text-xs font-semibold text-muted-foreground">已保存列表</span>
           <Badge variant="outline"
-            class="text-[9px] h-4 font-black bg-secondary/10 text-muted-foreground/60 border-none">{{ savedRoutes.length
+            class="text-[11px] h-5 font-semibold bg-secondary/10 text-muted-foreground border-none">{{ savedRoutes.length
             }}</Badge>
         </div>
 
         <div v-if="savedRoutes.length === 0"
           class="flex flex-col items-center justify-center py-10 border border-dashed border-border/30 rounded-2xl bg-secondary/5 text-center px-4">
           <PinFilledIcon class="w-8 h-8 text-muted-foreground/20 mb-3" />
-          <span class="text-[10px] leading-relaxed text-muted-foreground/40 font-medium">还没有保存的路线</span>
+          <span class="text-xs leading-relaxed text-muted-foreground font-medium">还没有保存的路线</span>
         </div>
 
         <div v-else class="flex flex-col gap-2">
-          <div v-for="route in savedRoutes" :key="route.name"
-            class="flex items-center gap-3 p-4 bg-secondary/20 rounded-xl border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 cursor-pointer group hover:shadow-lg hover:shadow-black/5"
+          <div v-for="route in savedRoutes" :key="route.name" :aria-current="activeRouteName === route.name ? 'true' : undefined"
+            class="flex items-center gap-3 p-4 rounded-xl border transition-all duration-300 cursor-pointer group hover:shadow-lg hover:shadow-black/5"
+            :class="activeRouteName === route.name
+              ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
+              : 'border-transparent bg-secondary/20 hover:border-primary/30 hover:bg-primary/5'"
             @click="loadRouteByName(route.name)">
             <div
               class="w-10 h-10 shrink-0 rounded-lg bg-background flex items-center justify-center border border-border/50 group-hover:border-primary/20 transition-colors">
-              <RocketIcon class="w-5 h-5 text-primary/40 group-hover:text-primary/80 transition-colors" />
+              <RocketIcon class="w-5 h-5 group-hover:text-primary/80 transition-colors"
+                :class="activeRouteName === route.name ? 'text-primary' : 'text-primary/40'" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-bold truncate group-hover:text-primary transition-colors tracking-tight">
                 {{ route.name }}
               </div>
-              <div class="text-[10px] uppercase font-black text-muted-foreground/40 mt-1 flex flex-wrap items-center gap-2">
+              <div class="text-xs font-medium text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
+                <span v-if="activeRouteName === route.name" class="text-primary">当前</span>
                 <span>{{ route.points.length }} <span class="font-bold">PTS</span></span>
                 <span class="w-1 h-1 rounded-full bg-border"></span>
                 <span>{{ formatDist(calculateDist(route.points)) }}</span>
               </div>
             </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" :aria-label="`导出路线 ${route.name}`"
+                  class="w-8 h-8 rounded-full text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all"
+                  @click.stop="exportRoute(route.points, route.name)">
+                  <UploadIcon class="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>导出路线到剪贴板</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon"
@@ -159,7 +185,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { DrawingPinFilledIcon as PinFilledIcon, TrashIcon, PlusIcon, RocketIcon, DownloadIcon } from '@radix-icons/vue'
+import { DrawingPinFilledIcon as PinFilledIcon, TrashIcon, PlusIcon, RocketIcon, DownloadIcon, UploadIcon } from '@radix-icons/vue'
+import { Clipboard } from '@wailsio/runtime'
 import {
   calculateRouteDistance,
   formatDistance,
@@ -189,7 +216,20 @@ const emit = defineEmits<{
 
 const newRouteName = ref('')
 const savedRoutes = ref<SavedRoute[]>([])
+const selectedRouteName = ref<string | null>(null)
 const routePoints = computed(() => props.modelValue)
+
+const activeRouteName = computed(() => {
+  const matches = (route: SavedRoute) => route.points.length === routePoints.value.length &&
+    route.points.every((point, index) =>
+      point.lat === routePoints.value[index].lat && point.lon === routePoints.value[index].lon)
+
+  if (routePoints.value.length === 0) return null
+  const selected = savedRoutes.value.find(route => route.name === selectedRouteName.value)
+  if (selected && matches(selected)) return selected.name
+  return savedRoutes.value.find(route => route.name !== 'last_route' && matches(route))?.name ??
+    savedRoutes.value.find(route => route.name === 'last_route' && matches(route))?.name ?? null
+})
 
 const showImport = ref(false)
 const importText = ref('')
@@ -221,8 +261,10 @@ function refreshRoutes() {
 function saveCurrentRoute() {
   if (!canSave.value) return
 
-  routesStore.saveRoute(newRouteName.value.trim(), routePoints.value)
-  showSuccess(`路线 "${newRouteName.value.trim()}" 已保存`)
+  const name = newRouteName.value.trim()
+  routesStore.saveRoute(name, routePoints.value)
+  selectedRouteName.value = name
+  showSuccess(`路线 "${name}" 已保存`)
   newRouteName.value = ''
   refreshRoutes()
 }
@@ -230,6 +272,7 @@ function saveCurrentRoute() {
 function loadRouteByName(name: string) {
   const points = routesStore.loadRoute(name)
   if (points && points.length > 0) {
+    selectedRouteName.value = name
     emit('update:modelValue', points)
     emit('locating-point', points[0])
     showSuccess(`已加载路线 "${name}"，包含 ${points.length} 个位置点`)
@@ -238,8 +281,18 @@ function loadRouteByName(name: string) {
 
 function deleteRouteByName(name: string) {
   routesStore.deleteRoute(name)
+  if (selectedRouteName.value === name) selectedRouteName.value = null
   showSuccess(`路线 "${name}" 已删除`)
   refreshRoutes()
+}
+
+async function exportRoute(points: RoutePoint[], name?: string) {
+  try {
+    await Clipboard.SetText(JSON.stringify(points, null, 2))
+    showSuccess(name ? `路线 "${name}" 已导出到剪贴板` : '当前路线已导出到剪贴板')
+  } catch (error) {
+    showErrorDialog(`导出路线失败：${error instanceof Error ? error.message : String(error)}`)
+  }
 }
 
 function executeClearRoute() {
