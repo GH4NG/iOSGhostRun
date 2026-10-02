@@ -46,6 +46,8 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
 
             - name: Set up Go
               uses: actions/setup-go@v6
@@ -92,6 +94,11 @@ jobs:
             contents: write
 
         steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
             - name: Download artifacts
               uses: actions/download-artifact@v8
               with:
@@ -117,6 +124,35 @@ jobs:
                     echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
                   else
                     echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Generate release notes
+              shell: bash
+              env:
+                  RELEASE_TAG: ${{ steps.tag.outputs.tag }}
+              run: |
+                  PREV=$(git tag --sort=-version:refname | grep -v "^${RELEASE_TAG}$" | head -1)
+
+                  if [ -f CHANGELOG.md ]; then
+                      VERSION="${RELEASE_TAG#v}"
+                      awk "/^## \[?v?${VERSION}\]?/{flag=1;next}/^## /{flag=0}flag" CHANGELOG.md > .release-notes.md || true
+                  fi
+
+                  if [ ! -s .release-notes.md ]; then
+                      {
+                          echo "## 更新内容"
+                          echo ""
+                          if [ -n "$PREV" ]; then
+                              git log "${PREV}..${RELEASE_TAG}" --oneline --no-decorate
+                          else
+                              git log --oneline --no-decorate | head -20
+                          fi
+                      } > .release-notes.md
+                  fi
+
+                  if [ -n "$PREV" ]; then
+                      echo "" >> .release-notes.md
+                      echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV}...${RELEASE_TAG}" >> .release-notes.md
                   fi
 
             - name: Prepare release files
@@ -145,9 +181,8 @@ jobs:
               uses: softprops/action-gh-release@v3
               with:
                   tag_name: ${{ steps.tag.outputs.tag }}
-                  name: Release ${{ steps.tag.outputs.tag }}
+                  name: ${{ steps.tag.outputs.tag }}
                   draft: false
                   prerelease: false
                   files: release/*
-                  body: |
-                      ## iOSGhostRun ${{ steps.tag.outputs.tag }}
+                  body_path: .release-notes.md
