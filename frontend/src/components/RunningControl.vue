@@ -44,15 +44,15 @@
           :disabled="isRunning" class="py-1" />
       </div>
 
-      <!-- 速度随机波动 -->
+      <!-- 速度波动 -->
       <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
-            class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">波动偏差</label>
+            class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">速度波动</label>
           <div class="flex items-baseline gap-2">
             <input v-model.number="speedVariance" type="number" min="0" max="30" step="1" :disabled="isRunning"
               class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <span class="text-[10px] font-bold text-muted-foreground/40 uppercase text-right w-8">%</span>
+            <span class="text-xs font-medium text-muted-foreground text-right w-8">±%</span>
           </div>
         </div>
         <Slider v-model="speedVarianceArray" :min="0" :max="30" :step="1" :disabled="isRunning" class="py-1" />
@@ -62,11 +62,11 @@
       <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
         <div class="flex justify-between items-center group/item">
           <label
-            class="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] group-hover/item:text-primary transition-colors">路经补正</label>
+            class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">路线偏移</label>
           <div class="flex items-baseline gap-2">
             <input v-model.number="routeOffset" type="number" min="0" max="10" step="0.5" :disabled="isRunning"
               class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <span class="text-[10px] font-bold text-muted-foreground/40 uppercase text-right w-8">M</span>
+            <span class="text-xs font-medium text-muted-foreground text-right w-8">m</span>
           </div>
         </div>
         <Slider v-model="routeOffsetArray" :min="0" :max="10" :step="0.5" :disabled="isRunning" class="py-1" />
@@ -209,12 +209,12 @@ const speedUnit = computed({
 
 const speedVariance = computed({
   get: () => paramsStore.params.speedVariance,
-  set: val => paramsStore.setParams({ speedVariance: val })
+  set: val => paramsStore.setParams({ speedVariance: clamp(Number.isFinite(val) ? val : 0, 0, 30) })
 })
 
 const routeOffset = computed({
   get: () => paramsStore.params.routeOffset,
-  set: val => paramsStore.setParams({ routeOffset: val })
+  set: val => paramsStore.setParams({ routeOffset: clamp(Number.isFinite(val) ? val : 0, 0, 10) })
 })
 
 const loopCount = computed({

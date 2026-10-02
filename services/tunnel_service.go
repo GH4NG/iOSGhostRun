@@ -21,33 +21,33 @@ var globalTunnelCancel context.CancelFunc
 var globalTunnelDone <-chan struct{}
 var tunnelStateMu sync.Mutex
 
-// StartTunnel 启动 tunnel
-func StartTunnel(ctx context.Context) error {
+// startTunnel 启动隧道管理器
+func startTunnel() (<-chan struct{}, error) {
 	pairRecordPath := ResolveAppDir("pairrecords")
 
 	pm, err := tunnel.NewPairRecordManager(pairRecordPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	userspaceTUN := tunnel.CheckPermissions() != nil
 	tm := tunnel.NewTunnelManager(pm, userspaceTUN)
-	tunnelCtx, cancelTunnel := context.WithCancel(ctx)
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", defaultTunnelInfoPort))
 	if err != nil {
-		cancelTunnel()
 		tm.Close()
-		return fmt.Errorf("启动 tunnel HTTP 服务失败: %w", err)
+		return nil, fmt.Errorf("监听隧道 HTTP 端口 %d 失败: %w", defaultTunnelInfoPort, err)
 	}
+
+	tunnelCtx, cancelTunnel := context.WithCancel(context.Background())
 
 	tunnelStateMu.Lock()
 	if globalTunnelManager != nil {
 		tunnelStateMu.Unlock()
+		cancelTunnel()
 		_ = listener.Close()
 		tm.Close()
-		cancelTunnel()
-		return nil
+		return nil, nil
 	}
 	globalTunnelManager = tm
 	globalTunnelCancel = cancelTunnel
@@ -137,22 +137,26 @@ func StartTunnel(ctx context.Context) error {
 		}
 	}()
 
-	<-tunnelCtx.Done()
+	// 后台等待停止信号并清理
+	go func() {
+		<-tunnelCtx.Done()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	_ = server.Shutdown(shutdownCtx)
-	_ = listener.Close()
-	updater.Wait()
-	tm.Close()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = server.Shutdown(shutdownCtx)
+		_ = listener.Close()
+		updater.Wait()
+		tm.Close()
 
-	tunnelStateMu.Lock()
-	globalTunnelManager = nil
-	globalTunnelCancel = nil
-	globalTunnelDone = nil
-	close(tunnelDone)
-	tunnelStateMu.Unlock()
-	return nil
+		tunnelStateMu.Lock()
+		globalTunnelManager = nil
+		globalTunnelCancel = nil
+		globalTunnelDone = nil
+		close(tunnelDone)
+		tunnelStateMu.Unlock()
+	}()
+
+	return tunnelDone, nil
 }
 
 // StopTunnel 停止 tunnel
@@ -177,11 +181,9 @@ func ensureTunnelReady(udid string) error {
 	tunnelStateMu.Unlock()
 
 	if needStart {
-		go func() {
-			if err := StartTunnel(context.Background()); err != nil {
-				Log.Error("TunnelService", "启动隧道服务失败: "+err.Error())
-			}
-		}()
+		if _, err := startTunnel(); err != nil {
+			return fmt.Errorf("启动隧道服务失败: %w", err)
+		}
 	}
 
 	if err := waitTunnelDeviceReady(udid, 15*time.Second); err != nil {

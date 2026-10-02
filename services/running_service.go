@@ -55,8 +55,8 @@ type RunningService struct {
 	currentIndex    int
 	speed           float64       // 目标速度 km/h
 	currentSpeed    float64       // 当前实时速度 km/h
-	speedVariance   float64       // 速度变化范围 km/h
-	routeOffset     float64       // 路线偏移距离
+	speedVariance   float64       // 速度波动比例，0.1 表示目标速度的 ±10%
+	routeOffset     float64       // 路线横向偏移上限，单位米
 	loopCount       int           // 循环次数 0=无限
 	updateInterval  time.Duration // 位置更新间隔
 	udid            string
@@ -81,8 +81,8 @@ func NewRunningService(locationService *LocationService) *RunningService {
 		state:           StateIdle,
 		speed:           8.0,
 		currentSpeed:    8.0,
-		speedVariance:   1.0,
-		routeOffset:     3.0,
+		speedVariance:   0.1,
+		routeOffset:     2.0,
 		updateInterval:  100 * time.Millisecond,
 		loopCount:       1,
 		locationService: locationService,
@@ -230,8 +230,14 @@ func (r *RunningService) SetRandomization(speedVariance, routeOffset float64) {
 	if speedVariance < 0 || math.IsNaN(speedVariance) || math.IsInf(speedVariance, 0) {
 		speedVariance = 0
 	}
+	if speedVariance > 0.3 {
+		speedVariance = 0.3
+	}
 	if routeOffset < 0 || math.IsNaN(routeOffset) || math.IsInf(routeOffset, 0) {
 		routeOffset = 0
+	}
+	if routeOffset > 10 {
+		routeOffset = 10
 	}
 	r.speedVariance = speedVariance
 	r.routeOffset = routeOffset
@@ -312,9 +318,19 @@ func (r *RunningService) runLoop(ctx context.Context) {
 	lastLogTime := time.Now()
 	lastStepTime := time.Now()
 	progress := 0.0
+	r.mu.Lock()
+	smoothedSpeed := r.speed
+	r.mu.Unlock()
 
-	var offsetLat, offsetLon float64
-	lastOffsetUpdateTime := time.Now()
+	// 每次跑步选择不同的缓慢配速周期，叠加较小的次级波动。
+	speedPhase := rand.Float64() * 2 * math.Pi
+	speedFreq := 0.15 + rand.Float64()*0.15
+	speedPhase2 := rand.Float64() * 2 * math.Pi
+	speedFreq2 := speedFreq * (2.0 + rand.Float64())
+
+	var targetOffsetMeters, lateralOffsetMeters float64
+	var offsetEastMeters, offsetNorthMeters float64
+	nextOffsetChange := time.Now().Add(5 * time.Second)
 
 	for {
 		select {
@@ -380,58 +396,29 @@ func (r *RunningService) runLoop(ctx context.Context) {
 				Log.Info("RunningService", fmt.Sprintf("开始第 %d 圈", currentLoop))
 			}
 
-			currentSpeed := baseSpeed
+			stepSeconds := stepDuration.Seconds()
+			desiredSpeed := baseSpeed
 			if speedVariance > 0 {
-				// 使用正弦函数实现速度的平滑波动
-				elapsed := time.Since(startTime).Seconds()
-				variation := math.Sin(elapsed*0.5) * speedVariance * 0.5
-				currentSpeed += variation
-				if currentSpeed < 0.5 {
-					currentSpeed = 0.5
-				}
+				elapsed := now.Sub(startTime).Seconds() - pausedDuration.Seconds()
+				paceWave := 0.8*math.Sin(elapsed*speedFreq+speedPhase) + 0.2*math.Sin(elapsed*speedFreq2+speedPhase2)
+				desiredSpeed *= 1 + speedVariance*paceWave
 			}
+			desiredSpeed = math.Max(0.5, desiredSpeed)
+			// 限制每秒速度变化，避免定位点突然加速或减速。
+			maxSpeedChange := 1.8 * stepSeconds
+			smoothedSpeed += math.Max(-maxSpeedChange, math.Min(maxSpeedChange, desiredSpeed-smoothedSpeed))
+			currentSpeed := smoothedSpeed
 
 			// 按真实经过时间推进，避免设备位置注入耗时导致实际速度偏慢。
-			speedKMMS := currentSpeed / (3600 * 1000)
-			remainingMoveKM := speedKMMS * float64(stepDuration.Milliseconds())
+			remainingMoveKM := currentSpeed * stepSeconds / 3600
 
-			// 按距离推进进度，避免重复累计导致距离异常
-			for remainingMoveKM > 0 {
-				if pointIndex >= len(route)-1 {
-					break
-				}
-
-				startPoint := route[pointIndex]
-				endPoint := route[pointIndex+1]
-				segmentDistanceKM := haversine(startPoint.Lat, startPoint.Lon, endPoint.Lat, endPoint.Lon)
-
-				if segmentDistanceKM < 0.0001 {
-					pointIndex++
-					progress = 0
-					continue
-				}
-
-				remainingInSegmentKM := segmentDistanceKM * (1 - progress)
-				if remainingMoveKM < remainingInSegmentKM {
-					progress += remainingMoveKM / segmentDistanceKM
-					totalDistanceKM += remainingMoveKM
-					remainingMoveKM = 0
-					continue
-				}
-
-				totalDistanceKM += remainingInSegmentKM
-				remainingMoveKM -= remainingInSegmentKM
-				pointIndex++
-				progress = 0
-
-				if pointIndex >= len(route)-1 {
-					if loopCount > 0 && currentLoop >= loopCount {
-						break
-					}
-					pointIndex = 0
-					currentLoop++
-					Log.Info("RunningService", fmt.Sprintf("开始第 %d 圈", currentLoop))
-				}
+			// 沿路线推进本步距离
+			previousLoop := currentLoop
+			var movedKM float64
+			pointIndex, progress, currentLoop, movedKM = advanceAlongRoute(route, pointIndex, progress, currentLoop, loopCount, remainingMoveKM)
+			totalDistanceKM += movedKM
+			if currentLoop > previousLoop {
+				Log.Info("RunningService", fmt.Sprintf("开始第 %d 圈", currentLoop))
 			}
 
 			// 检查是否到达终点
@@ -446,20 +433,31 @@ func (r *RunningService) runLoop(ctx context.Context) {
 			currentLat := startPoint.Lat + (endPoint.Lat-startPoint.Lat)*progress
 			currentLon := startPoint.Lon + (endPoint.Lon-startPoint.Lon)*progress
 
-			// 路线偏移：使用缓慢变化的偏移量，而不是每次随机
-			if routeOffset > 0 {
-				// 每3秒缓慢更新一次目标偏移量
-				if time.Since(lastOffsetUpdateTime) > 3*time.Second {
-					targetOffsetLat := (rand.Float64()*2 - 1) * routeOffset * 0.00001
-					targetOffsetLon := (rand.Float64()*2 - 1) * routeOffset * 0.00001
-					// 平滑过渡到新偏移
-					offsetLat = offsetLat*0.7 + targetOffsetLat*0.3
-					offsetLon = offsetLon*0.7 + targetOffsetLon*0.3
-					lastOffsetUpdateTime = time.Now()
-				}
-				currentLat += offsetLat
-				currentLon += offsetLon
+			// 以米计算路线的横向偏移，并在目标变化和转弯时连续过渡。
+			if routeOffset > 0 && !now.Before(nextOffsetChange) {
+				targetOffsetMeters = (rand.Float64()*2 - 1) * routeOffset
+				nextOffsetChange = now.Add(time.Duration(5+rand.Intn(4)) * time.Second)
+			} else if routeOffset == 0 {
+				targetOffsetMeters = 0
 			}
+			targetOffsetMeters = math.Max(-routeOffset, math.Min(routeOffset, targetOffsetMeters))
+			lateralBlend := 1 - math.Exp(-stepSeconds/2.5)
+			lateralOffsetMeters += (targetOffsetMeters - lateralOffsetMeters) * lateralBlend
+			latMetersPerDegree := 111320.0
+			lonMetersPerDegree := math.Max(latMetersPerDegree*math.Abs(math.Cos(currentLat*math.Pi/180)), 1)
+			segmentEast := (endPoint.Lon - startPoint.Lon) * lonMetersPerDegree
+			segmentNorth := (endPoint.Lat - startPoint.Lat) * latMetersPerDegree
+			segmentLength := math.Hypot(segmentEast, segmentNorth)
+			var desiredOffsetEast, desiredOffsetNorth float64
+			if segmentLength > 0 {
+				desiredOffsetEast = -segmentNorth / segmentLength * lateralOffsetMeters
+				desiredOffsetNorth = segmentEast / segmentLength * lateralOffsetMeters
+			}
+			turnBlend := 1 - math.Exp(-stepSeconds/0.8)
+			offsetEastMeters += (desiredOffsetEast - offsetEastMeters) * turnBlend
+			offsetNorthMeters += (desiredOffsetNorth - offsetNorthMeters) * turnBlend
+			currentLat += offsetNorthMeters / latMetersPerDegree
+			currentLon += offsetEastMeters / lonMetersPerDegree
 
 			currentPoint := Point{
 				Lat: currentLat,
@@ -517,8 +515,8 @@ func (r *RunningService) runLoop(ctx context.Context) {
 
 			// 每10秒输出一次状态日志
 			if time.Since(lastLogTime) >= 10*time.Second {
-				Log.Debug("RunningService", fmt.Sprintf("跑步中：距离=%.0fm，速度=%.1fkm/h，位置=(%.5f, %.5f)，圈数=%d/%d",
-					totalDistanceKM*1000, currentSpeed, currentPoint.Lat, currentPoint.Lon, currentLoop, loopCount))
+				Log.Debug("RunningService", fmt.Sprintf("跑步中：距离=%.0fm，速度=%.1fkm/h，位置=(%.5f, %.5f)，路线点=%d/%d，圈数=%d/%d",
+					totalDistanceKM*1000, currentSpeed, currentPoint.Lat, currentPoint.Lon, pointIndex+1, len(route), currentLoop, loopCount))
 				lastLogTime = time.Now()
 			}
 		}
@@ -535,4 +533,45 @@ func haversine(lat1, lon1, lat2, lon2 float64) float64 {
 			math.Sin(dLon/2)*math.Sin(dLon/2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return R * c
+}
+
+func advanceAlongRoute(route []Point, pointIndex int, progress float64, currentLoop int, loopCount int, moveKM float64) (int, float64, int, float64) {
+	moved := 0.0
+	for moveKM > 0 {
+		if pointIndex >= len(route)-1 {
+			break
+		}
+
+		startPoint := route[pointIndex]
+		endPoint := route[pointIndex+1]
+		segmentDistanceKM := haversine(startPoint.Lat, startPoint.Lon, endPoint.Lat, endPoint.Lon)
+
+		if segmentDistanceKM < 0.0001 {
+			pointIndex++
+			progress = 0
+			continue
+		}
+
+		remainingInSegmentKM := segmentDistanceKM * (1 - progress)
+		if moveKM < remainingInSegmentKM {
+			progress += moveKM / segmentDistanceKM
+			moved += moveKM
+			moveKM = 0
+			continue
+		}
+
+		moved += remainingInSegmentKM
+		moveKM -= remainingInSegmentKM
+		pointIndex++
+		progress = 0
+
+		if pointIndex >= len(route)-1 {
+			if loopCount > 0 && currentLoop >= loopCount {
+				break
+			}
+			pointIndex = 0
+			currentLoop++
+		}
+	}
+	return pointIndex, progress, currentLoop, moved
 }
