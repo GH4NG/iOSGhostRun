@@ -60,7 +60,7 @@
         class="flex flex-col gap-3 p-4 bg-secondary/10 rounded-xl border border-border/40 animate-in fade-in slide-in-from-top-2">
         <div>
           <div class="text-xs font-semibold text-muted-foreground mb-2">
-            坐标系选择
+            来源坐标系 <span class="font-normal">（标准 GPX 使用 WGS84）</span>
           </div>
           <div class="relative">
             <Button variant="outline" size="sm"
@@ -90,9 +90,13 @@
         </div>
         <div>
           <div class="text-xs font-semibold text-muted-foreground mb-2">
-            粘贴路线数据 (JSON)
+            导入路线数据 (JSON / GPX)
           </div>
-          <textarea v-model="importText" placeholder='{"lng":"116.29","lat":"40.00"}, ...'
+          <input ref="gpxFileInput" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml"
+            class="hidden" @change="handleGPXFileChange" />
+          <Button variant="outline" size="sm" class="h-8 mb-2 text-xs bg-background border-border/40"
+            @click="gpxFileInput?.click()">选择 GPX 文件</Button>
+          <textarea v-model="importText" placeholder='粘贴 JSON 坐标数组或 GPX XML 内容'
             class="w-full min-w-0 min-h-[100px] p-3 text-xs font-mono bg-background border border-border/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 resize-y"></textarea>
         </div>
         <div class="flex gap-2 mt-2">
@@ -190,6 +194,7 @@ import { Clipboard } from '@wailsio/runtime'
 import {
   calculateRouteDistance,
   formatDistance,
+  parseGPXRoute,
   type RoutePoint
 } from '../lib/routeUtils'
 import { useRoutesStore, type SavedRoute } from '../stores/routes'
@@ -233,8 +238,9 @@ const activeRouteName = computed(() => {
 
 const showImport = ref(false)
 const importText = ref('')
-const importCoordSystem = ref<'wgs84' | 'gcj02' | 'bd09' | ''>('')
+const importCoordSystem = ref<'wgs84' | 'gcj02' | 'bd09'>('wgs84')
 const showCoordSystemMenu = ref(false)
+const gpxFileInput = ref<HTMLInputElement | null>(null)
 
 const canSave = computed(() => {
   return newRouteName.value.trim() && routePoints.value.length >= 2
@@ -312,61 +318,96 @@ function handleImport() {
   try {
     let points: RoutePoint[] = []
 
-    let coordSystem = importCoordSystem.value
-
-    const matches = text.match(/\{"lng":"[^"]+","lat":"[^"]+"\}/g)
-    if (matches && matches.length > 0) {
-      points = matches.map(m => {
-        const p = JSON.parse(m)
-        let lat = parseFloat(p.lat)
-        let lon = parseFloat(p.lng)
-
-        // 根据导入坐标系进行转换
-        if (coordSystem === 'gcj02') {
-          ;[lat, lon] = GCJ02ToWGS84(lat, lon)
-        } else if (coordSystem === 'bd09') {
-          ;[lat, lon] = BD09ToWGS84(lat, lon)
-        }
-        return { lat, lon }
-      })
+    if (/<(?:[\w.-]+:)?gpx(?:\s|>)/i.test(text)) {
+      points = convertGPXPointsToWGS84(parseGPXRoute(text))
     } else {
-      try {
-        const parsed = JSON.parse(text)
-        if (Array.isArray(parsed)) {
-          points = parsed.map(p => {
-            let lat = parseFloat(p.lat)
-            let lon = parseFloat(p.lng ?? p.lon)
+      const coordSystem = importCoordSystem.value
 
-            // 根据导入坐标系进行转换
-            if (coordSystem === 'gcj02') {
-              ;[lat, lon] = GCJ02ToWGS84(lat, lon)
-            } else if (coordSystem === 'bd09') {
-              ;[lat, lon] = BD09ToWGS84(lat, lon)
-            }
-            return { lat, lon }
-          })
+      const matches = text.match(/\{"lng":"[^"]+","lat":"[^"]+"\}/g)
+      if (matches && matches.length > 0) {
+        points = matches.map(m => {
+          const p = JSON.parse(m)
+          let lat = parseFloat(p.lat)
+          let lon = parseFloat(p.lng)
+
+          // 根据导入坐标系进行转换
+          if (coordSystem === 'gcj02') {
+            ;[lat, lon] = GCJ02ToWGS84(lat, lon)
+          } else if (coordSystem === 'bd09') {
+            ;[lat, lon] = BD09ToWGS84(lat, lon)
+          }
+          return { lat, lon }
+        })
+      } else {
+        try {
+          const parsed = JSON.parse(text)
+          if (Array.isArray(parsed)) {
+            points = parsed.map(p => {
+              let lat = parseFloat(p.lat)
+              let lon = parseFloat(p.lng ?? p.lon)
+
+              // 根据导入坐标系进行转换
+              if (coordSystem === 'gcj02') {
+                ;[lat, lon] = GCJ02ToWGS84(lat, lon)
+              } else if (coordSystem === 'bd09') {
+                ;[lat, lon] = BD09ToWGS84(lat, lon)
+              }
+              return { lat, lon }
+            })
+          }
+        } catch (e) {
+          // Continue
         }
-      } catch (e) {
-        // Continue
       }
     }
 
     if (points.length > 0) {
-      if (points.some(p => !Number.isFinite(p.lat) || !Number.isFinite(p.lon) ||
-        p.lat < -90 || p.lat > 90 || p.lon < -180 || p.lon > 180)) {
-        throw new Error('路线包含无效经纬度，请检查数据格式和坐标范围。')
-      }
-      emit('update:modelValue', points)
-      emit('locating-point', points[0])
-      showImport.value = false
       importText.value = ''
-      showSuccess(`已导入路线，包含 ${points.length} 个位置点`)
+      commitImportedRoute(points)
     } else {
       showErrorDialog('无法识别路线数据格式，请确保格式正确。')
     }
   } catch (e) {
     showErrorDialog(`操作失败: ${e instanceof Error ? e.message : '未知错误'}`)
   }
+}
+
+async function handleGPXFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  try {
+    const points = convertGPXPointsToWGS84(parseGPXRoute(await file.text()))
+    commitImportedRoute(points)
+  } catch (e) {
+    showErrorDialog(`导入 GPX 文件失败：${e instanceof Error ? e.message : '未知错误'}`)
+  } finally {
+    input.value = ''
+  }
+}
+
+function convertGPXPointsToWGS84(points: RoutePoint[]): RoutePoint[] {
+  if (importCoordSystem.value === 'wgs84') return points
+
+  return points.map(({ lat, lon }) => {
+    const [convertedLat, convertedLon] = importCoordSystem.value === 'gcj02'
+      ? GCJ02ToWGS84(lat, lon)
+      : BD09ToWGS84(lat, lon)
+    return { lat: convertedLat, lon: convertedLon }
+  })
+}
+
+function commitImportedRoute(points: RoutePoint[]) {
+  if (points.some(p => !Number.isFinite(p.lat) || !Number.isFinite(p.lon) ||
+    p.lat < -90 || p.lat > 90 || p.lon < -180 || p.lon > 180)) {
+    throw new Error('路线包含无效经纬度，请检查数据格式和坐标范围。')
+  }
+
+  emit('update:modelValue', points)
+  emit('locating-point', points[0])
+  showImport.value = false
+  showSuccess(`已导入路线，包含 ${points.length} 个位置点`)
 }
 
 function calculateDist(points: RoutePoint[]) {
