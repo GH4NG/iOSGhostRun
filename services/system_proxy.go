@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -240,7 +241,24 @@ func macProxySettings() (map[string]string, error) {
 }
 
 func readRegValue(key, name string) (string, error) {
-	out, err := exec.Command("reg", "query", key, "/v", name).Output()
+	cmd := exec.Command("reg", "query", key, "/v", name)
+	attrField := reflect.ValueOf(cmd).Elem().FieldByName("SysProcAttr")
+	if attrField.IsValid() && attrField.CanSet() && attrField.Kind() == reflect.Ptr {
+		attr := attrField
+		if attr.IsNil() {
+			attr = reflect.New(attrField.Type().Elem())
+		}
+		attr = attr.Elem()
+		hideWindow := attr.FieldByName("HideWindow")
+		creationFlags := attr.FieldByName("CreationFlags")
+		if hideWindow.IsValid() && hideWindow.CanSet() && hideWindow.Kind() == reflect.Bool &&
+			creationFlags.IsValid() && creationFlags.CanSet() && creationFlags.Kind() >= reflect.Uint && creationFlags.Kind() <= reflect.Uint64 {
+			hideWindow.SetBool(true)
+			creationFlags.SetUint(0x08000000)
+			attrField.Set(attr.Addr())
+		}
+	}
+	out, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
