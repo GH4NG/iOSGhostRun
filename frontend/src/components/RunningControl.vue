@@ -193,7 +193,7 @@ const emit = defineEmits<{
   'position-update': [pos: { lat: number; lon: number }]
   'state-change': [state: RunningStatus['state']]
   completed: []
-  'busy-change': [busy: boolean]
+  'selection-lock-change': [locked: boolean]
 }>()
 
 const { showError: showErrorDialog, showSuccess } = useNotification()
@@ -225,17 +225,17 @@ const loopCount = computed({
 })
 
 const status = ref<RunningStatus | null>(null)
+const statusConfirmed = ref(false)
 let statusRevision = 0
 let disposed = false
 const STATUS_CHECK_INTERVAL_MS = 5000
 const pendingAction = ref<'start' | 'pause' | 'resume' | 'stop' | null>(null)
 const isOperating = computed(() => pendingAction.value !== null)
-const parametersDisabled = computed(() => isRunning.value || isOperating.value || props.disabled || !status.value)
+const parametersDisabled = computed(() => isRunning.value || isOperating.value || props.disabled || !statusConfirmed.value)
 let statusInterval: ReturnType<typeof setInterval> | null = null
 let statusRequest: Promise<void> | null = null
 let lastStatusAt = 0
 
-watch(isOperating, busy => emit('busy-change', busy), { flush: 'sync' })
 let offPosition: (() => void) | null = null
 let offCompleted: (() => void) | null = null
 let offError: (() => void) | null = null
@@ -245,6 +245,7 @@ function applyStatus(data: RunningStatus) {
   lastStatusAt = Date.now()
   statusRevision++
   status.value = data
+  statusConfirmed.value = true
 }
 
 const speedUnitOptions: Array<{ value: SpeedUnit; label: string }> = [
@@ -314,9 +315,14 @@ const loopCountArray = computed({
 const isRunning = computed(() => status.value?.state === 'running')
 const isPaused = computed(() => status.value?.state === 'paused')
 const canStart = computed(() =>
-  status.value?.state === 'idle' && props.udid && props.routePoints.length >= 2 &&
+  statusConfirmed.value && status.value?.state === 'idle' && props.udid && props.routePoints.length >= 2 &&
   !isOperating.value && !props.disabled
 )
+
+const selectionLocked = computed(() =>
+    !statusConfirmed.value || isRunning.value || isPaused.value || isOperating.value
+)
+watch(selectionLocked, locked => emit('selection-lock-change', locked), { flush: 'sync', immediate: true })
 
 watch(
   () => status.value?.state,
@@ -330,7 +336,7 @@ const statusText = computed(() => {
   if (pendingAction.value) {
     return { start: '启动中…', pause: '暂停中…', resume: '恢复中…', stop: '停止中…' }[pendingAction.value]
   }
-  if (!status.value) return '同步中…'
+  if (!statusConfirmed.value) return '同步中…'
   if (isRunning.value) return '运行中'
   if (isPaused.value) return '已暂停'
   return '待机'
@@ -351,6 +357,7 @@ async function runAction(
 ) {
   if (disposed || isOperating.value || props.disabled) return
   pendingAction.value = action
+  statusConfirmed.value = false
   // 操作前发出的查询不应覆盖操作后的状态。
   statusRevision++
   try {
@@ -412,6 +419,7 @@ function updateStatus(reportError = false): Promise<void> {
       const data = await RunningService.GetStatus()
       if (!disposed && revision === statusRevision) {
         status.value = data
+        statusConfirmed.value = true
         lastStatusAt = Date.now()
       }
     } catch (e) {

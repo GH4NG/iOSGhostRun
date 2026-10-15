@@ -42,9 +42,9 @@ func main() {
 
 	// 创建服务实例
 	loggerSvc := services.NewLoggerService()
-	devicesSvc := services.NewDevicesService()
 	locationSvc := services.NewLocationService()
 	runningSvc := services.NewRunningService(locationSvc)
+	devicesSvc := services.NewDevicesService(runningSvc)
 	updateSvc := services.NewUpdateService()
 
 	var window *application.WebviewWindow

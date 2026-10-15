@@ -12,7 +12,7 @@
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="新建路线"
               class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
-              @click="executeClearRoute">
+              :disabled="props.disabled" @click="executeClearRoute">
               <PlusIcon class="w-4 h-4" />
             </Button>
           </TooltipTrigger>
@@ -23,7 +23,7 @@
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="导入路线"
               class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
-              @click="showImport = !showImport">
+              :disabled="props.disabled" @click="showImport = !showImport">
               <DownloadIcon class="w-4 h-4" />
             </Button>
           </TooltipTrigger>
@@ -45,7 +45,7 @@
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="清空当前路线"
               class="w-8 h-8 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
-              :disabled="routePoints.length === 0" @click="executeClearRoute">
+              :disabled="props.disabled || routePoints.length === 0" @click="executeClearRoute">
               <TrashIcon class="w-4 h-4" />
             </Button>
           </TooltipTrigger>
@@ -55,8 +55,11 @@
     </div>
 
     <div class="p-3 min-w-0 flex flex-col gap-3">
+      <p v-if="props.disabled" role="status" class="rounded-lg bg-primary/10 p-3 text-xs leading-5 text-muted-foreground">
+        任务结束后可编辑。
+      </p>
       <!-- 导入路线区域 -->
-      <div v-if="showImport"
+      <div v-if="showImport && !props.disabled"
         class="flex flex-col gap-3 p-4 bg-secondary/10 rounded-xl border border-border/40 animate-in fade-in slide-in-from-top-2">
         <div>
           <div class="text-xs font-medium text-muted-foreground mb-2">
@@ -107,7 +110,7 @@
 
       <!-- 保存路线 -->
       <div class="flex gap-2">
-        <Input v-model="newRouteName" type="text" placeholder="给这条线路起个名字..."
+        <Input v-model="newRouteName" :disabled="props.disabled" type="text" placeholder="给这条线路起个名字..."
           class="min-w-0 h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all font-sans text-sm font-medium"
           @keydown.enter="saveCurrentRoute" />
         <Tooltip>
@@ -139,7 +142,9 @@
 
         <div v-else class="flex flex-col gap-2">
           <div v-for="route in savedRoutes" :key="route.name" :aria-current="activeRouteName === route.name ? 'true' : undefined"
-            class="flex items-center gap-2 p-3 rounded-lg border transition-all duration-300 cursor-pointer group hover:shadow-lg hover:shadow-black/5"
+            role="button" :tabindex="props.disabled ? -1 : 0" :aria-disabled="props.disabled"
+            @keydown.enter.self="loadRouteByName(route.name)" @keydown.space.self.prevent="loadRouteByName(route.name)"
+            class="flex items-center gap-2 p-3 rounded-lg border transition-all duration-300 cursor-pointer aria-disabled:cursor-default group hover:shadow-lg hover:shadow-black/5"
             :class="activeRouteName === route.name
               ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
               : 'border-transparent bg-secondary/20 hover:border-primary/30 hover:bg-primary/5'"
@@ -173,7 +178,7 @@
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon"
-                  :aria-label="`删除路线 ${route.name}`"
+                  :aria-label="`删除路线 ${route.name}`" :disabled="props.disabled"
                   class="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all opacity-100"
                   @click.stop="deleteRouteByName(route.name)">
                   <TrashIcon class="w-4 h-4" />
@@ -189,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { DrawingPinFilledIcon as PinFilledIcon, TrashIcon, PlusIcon, RocketIcon, DownloadIcon, UploadIcon } from '@radix-icons/vue'
 import { Clipboard } from '@wailsio/runtime'
 import {
@@ -213,12 +218,16 @@ const routesStore = useRoutesStore()
 const props = defineProps<{
   modelValue: RoutePoint[]
   currentLayerId?: string
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [points: RoutePoint[]]
   'locating-point': [point: RoutePoint]
 }>()
+
+let importRevision = 0
+let disposed = false
 
 const newRouteName = ref('')
 const savedRoutes = ref<SavedRoute[]>([])
@@ -244,7 +253,7 @@ const showCoordSystemMenu = ref(false)
 const gpxFileInput = ref<HTMLInputElement | null>(null)
 
 const canSave = computed(() => {
-  return newRouteName.value.trim() && routePoints.value.length >= 2
+  return !props.disabled && newRouteName.value.trim() && routePoints.value.length >= 2
 })
 
 const coordSystemLabel = computed(() => {
@@ -277,6 +286,7 @@ function saveCurrentRoute() {
 }
 
 function loadRouteByName(name: string) {
+  if (disposed || props.disabled) return
   const points = routesStore.loadRoute(name)
   if (points && points.length > 0) {
     selectedRouteName.value = name
@@ -287,6 +297,7 @@ function loadRouteByName(name: string) {
 }
 
 function deleteRouteByName(name: string) {
+  if (disposed || props.disabled) return
   routesStore.deleteRoute(name)
   if (selectedRouteName.value === name) selectedRouteName.value = null
   showSuccess(`路线 "${name}" 已删除`)
@@ -303,6 +314,7 @@ async function exportRoute(points: RoutePoint[], name?: string) {
 }
 
 function executeClearRoute() {
+  if (disposed || props.disabled) return
   if (routePoints.value.length > 0) {
     emit('update:modelValue', [])
     showSuccess('已清空当前路线')
@@ -313,6 +325,8 @@ function executeClearRoute() {
 
 // 导入路线数据
 function handleImport() {
+  if (disposed || props.disabled) return
+  importRevision++
   const text = importText.value.trim()
   if (!text) return
 
@@ -376,12 +390,18 @@ function handleImport() {
 async function handleGPXFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (!file) return
-
+  if (!file || disposed || props.disabled) {
+    input.value = ''
+    return
+  }
+  const revision = ++importRevision
   try {
-    const points = convertGPXPointsToWGS84(parseGPXRoute(await file.text()))
+    const text = await file.text()
+    if (disposed || props.disabled || revision !== importRevision) return
+    const points = convertGPXPointsToWGS84(parseGPXRoute(text))
     commitImportedRoute(points)
   } catch (e) {
+    if (disposed || props.disabled || revision !== importRevision) return
     showErrorDialog(`导入 GPX 文件失败：${e instanceof Error ? e.message : '未知错误'}`)
   } finally {
     input.value = ''
@@ -400,6 +420,7 @@ function convertGPXPointsToWGS84(points: RoutePoint[]): RoutePoint[] {
 }
 
 function commitImportedRoute(points: RoutePoint[]) {
+  if (disposed || props.disabled) return
   if (points.some(p => !Number.isFinite(p.lat) || !Number.isFinite(p.lon) ||
     p.lat < -90 || p.lat > 90 || p.lon < -180 || p.lon > 180)) {
     throw new Error('路线包含无效经纬度，请检查数据格式和坐标范围。')
@@ -419,8 +440,21 @@ function formatDist(km: number) {
   return formatDistance(km)
 }
 
+watch(() => props.disabled, disabled => {
+    if (disabled) {
+        importRevision++
+        showImport.value = false
+        showCoordSystemMenu.value = false
+    }
+}, { flush: 'sync' })
+
 onMounted(() => {
   refreshRoutes()
+})
+
+onUnmounted(() => {
+    disposed = true
+    importRevision++
 })
 </script>
 

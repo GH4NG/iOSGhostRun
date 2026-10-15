@@ -108,6 +108,9 @@ const isBusy = computed(() => loading.value || selectingUdid.value !== '')
 let disposed = false
 
 watch(isBusy, busy => emit('busy-change', busy), { flush: 'sync' })
+watch(() => props.disabled, disabled => {
+    if (!disabled && devices.value.length === 0) void refreshDevices()
+})
 const selectedUdid = ref(props.modelValue)
 const imageMounted = ref(false)
 

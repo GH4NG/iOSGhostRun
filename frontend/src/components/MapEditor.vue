@@ -161,7 +161,7 @@
             </Badge>
           </button>
           <div id="route-panel-content" v-show="!isRouteCollapsed" class="map-route-content app-scrollbar min-h-0 overflow-y-auto overscroll-contain">
-            <RouteManager v-model="routePoints" :current-layer-id="currentLayerId" @locating-point="onLocatingPoint" />
+            <RouteManager v-model="routePoints" :disabled="props.disabled" :current-layer-id="currentLayerId" @locating-point="onLocatingPoint" />
           </div>
         </Card>
       </div>
@@ -281,7 +281,7 @@ let isUnmounted = false
 const routePoints = computed<RoutePoint[]>({
   get: () => props.modelValue,
   set: (v: RoutePoint[]) => {
-    emit('update:modelValue', v)
+    if (!props.disabled) emit('update:modelValue', v)
   }
 })
 

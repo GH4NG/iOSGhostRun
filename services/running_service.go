@@ -89,6 +89,25 @@ func NewRunningService(locationService *LocationService) *RunningService {
 	}
 }
 
+// withIdleDeviceOperation 与启动/停止共用生命周期锁，避免设备挂载和任务启动交错。
+func (r *RunningService) withIdleDeviceOperation(operation func() error) error {
+	r.lifecycleMu.Lock()
+	defer r.lifecycleMu.Unlock()
+
+	r.mu.Lock()
+	idle := r.state == StateIdle
+	r.mu.Unlock()
+	if !idle {
+		return fmt.Errorf("跑步任务进行中，请先停止任务再切换设备")
+	}
+	// 自然完成时状态先变为空闲，但定位连接的清理可能仍在进行。
+	r.runWG.Wait()
+	if appShuttingDown.Load() {
+		return fmt.Errorf("应用正在退出，请稍后重试")
+	}
+	return operation()
+}
+
 // StartRun 开始跑步
 func (r *RunningService) StartRun(udid string, route []Point, speed float64) error {
 	r.lifecycleMu.Lock()

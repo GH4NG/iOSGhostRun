@@ -10,12 +10,13 @@ import (
 
 // DevicesService 设备管理服务
 type DevicesService struct {
-	mu           sync.RWMutex
-	selectedUDID string
+	mu             sync.RWMutex
+	selectedUDID   string
+	runningService *RunningService
 }
 
-func NewDevicesService() *DevicesService {
-	return &DevicesService{}
+func NewDevicesService(runningService *RunningService) *DevicesService {
+	return &DevicesService{runningService: runningService}
 }
 
 // ListDevices 获取可连接设备列表
@@ -64,9 +65,18 @@ func (d *DevicesService) ListDevices() ([]DeviceInfo, error) {
 
 // SelectDevice 选择设备
 func (d *DevicesService) SelectDevice(udid string) error {
+	if d.runningService == nil {
+		return fmt.Errorf("跑步服务尚未初始化")
+	}
+	return d.runningService.withIdleDeviceOperation(func() error {
+		return d.selectDevice(udid)
+	})
+}
+
+func (d *DevicesService) selectDevice(udid string) error {
 	Log.Info("DevicesService", "选择设备: "+udid)
 	if udid == "" {
-		return fmt.Errorf("udid required")
+		return fmt.Errorf("未选择设备")
 	}
 
 	_, version, err := GetDeviceAndVersion(udid)

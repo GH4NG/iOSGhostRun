@@ -112,10 +112,10 @@
             <div class="flex-1 min-h-0">
               <ScrollArea class="h-full">
                 <div class="flex flex-col gap-3 px-4 pb-4">
-                  <DevicePanel v-model="selectedUdid" :disabled="isRunning || isRunOperationPending"
+                  <DevicePanel v-model="selectedUdid" :disabled="isSelectionLocked"
                     @busy-change="isDeviceBusy = $event" />
                   <RunningControl :udid="selectedUdid" :route-points="routePoints" :disabled="isDeviceBusy"
-                    @busy-change="isRunOperationPending = $event" @position-update="onPositionUpdate"
+                    @selection-lock-change="isSelectionLocked = $event" @position-update="onPositionUpdate"
                     @state-change="onRunStateChange" />
                 </div>
               </ScrollArea>
@@ -127,8 +127,8 @@
         <main class="app-main flex-1 flex flex-col min-w-0 min-h-0 relative bg-background">
           <!-- 地图区域 -->
           <div class="flex-1 relative min-h-0">
-            <MapEditor ref="mapEditor" v-model="routePoints" :current-position="currentPosition"
-              :disabled="isRunning" />
+            <MapEditor ref="mapEditor" v-model="editableRoutePoints" :current-position="currentPosition"
+              :disabled="isSelectionLocked" />
           </div>
 
           <!-- 日志区域 -->
@@ -265,7 +265,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -297,7 +297,13 @@ const routePoints = ref<RoutePoint[]>([])
 const currentPosition = ref<{ lat: number; lon: number } | null>(null)
 const isRunning = ref(false)
 const isDeviceBusy = ref(false)
-const isRunOperationPending = ref(false)
+const isSelectionLocked = ref(true)
+const editableRoutePoints = computed({
+    get: () => routePoints.value,
+    set: points => {
+        if (!isSelectionLocked.value) routePoints.value = points
+    }
+})
 const isLogCollapsed = ref(true)
 const showCloseDialog = ref(false)
 const isMacOS = ref(System.IsMac() || navigator.userAgent.includes('Mac OS X'))
