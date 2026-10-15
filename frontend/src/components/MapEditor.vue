@@ -9,16 +9,16 @@
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
-                  class="flex items-center gap-1 p-0 shadow-2xl border-border/30 bg-card/80 backdrop-blur-md ring-1 ring-white/10 group rounded-xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]"
+                  class="flex items-center gap-1 p-0 shadow-lg shadow-black/10 border-border/60 bg-card/80 backdrop-blur-md ring-1 ring-white/10 group rounded-xl overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]"
                   :class="[
                     isSearchExpanded
-                      ? 'w-full px-1 py-1'
-                      : 'w-10 h-10 ring-0 border-transparent bg-accent text-primary h-10 w-10 border-border/30 !bg-card/85'
+                      ? 'w-full h-10 px-1'
+                      : 'h-10 w-10 justify-center ring-0 text-primary !bg-card/85'
                   ]">
                   <Button size="icon" variant="ghost" aria-label="搜索地点" :aria-expanded="isSearchExpanded"
-                    class="h-10 w-10 shrink-0 rounded-lg text-primary hover:bg-primary/10 transition-all"
+                    class="h-8 w-8 shrink-0 rounded-lg text-primary hover:bg-primary/10 transition-all"
                     @click="isSearchExpanded = !isSearchExpanded">
-                    <MagnifyingGlassIcon class="w-6 h-6" />
+                    <MagnifyingGlassIcon class="w-4 h-4" />
                   </Button>
                   <Input v-if="isSearchExpanded" v-model="searchQuery" type="text" placeholder="搜索地点…"
                     class="h-9 min-w-0 border-none bg-transparent focus-visible:ring-0 text-sm font-medium tracking-normal placeholder:text-muted-foreground/55 animate-in fade-in slide-in-from-left-2 duration-500"
@@ -34,7 +34,7 @@
               leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100"
               leave-to-class="opacity-0 -translate-y-2 scale-95">
               <Card v-if="isSearchExpanded && searchResults.length"
-                class="map-search-results app-scrollbar absolute top-full mt-2 w-full max-h-64 overflow-y-auto z-30 shadow-2xl border-border/30 bg-card/95 backdrop-blur-xl ring-1 ring-white/10 p-1.5 flex flex-col gap-1">
+                class="map-search-results app-scrollbar absolute top-full mt-2 w-full max-h-64 overflow-y-auto z-30 shadow-lg shadow-black/10 border-border/60 bg-card/95 backdrop-blur-xl ring-1 ring-white/10 p-1.5 flex flex-col gap-1">
                 <div v-for="(result, idx) in searchResults" :key="idx"
                   class="px-4 py-3 text-xs font-medium cursor-pointer rounded-xl transition-colors hover:bg-primary/10 hover:text-primary leading-normal"
                   @click="selectSearchResult(result)">
@@ -50,14 +50,14 @@
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="outline" size="icon"
-                class="h-10 w-10 shadow-2xl border-border/30 bg-card/85 backdrop-blur-md ring-1 ring-white/10 transition-all duration-300"
+                class="h-10 w-10 shadow-lg shadow-black/10 border-border/60 bg-card/85 backdrop-blur-md ring-1 ring-white/10 transition-all duration-300"
                 :class="[
                   isDrawingMode
                     ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90 shadow-primary/30'
                     : 'text-muted-foreground hover:bg-accent'
                 ]" :disabled="disabled" :aria-label="isDrawingMode ? '停止绘制' : '开启路径绘制模式'"
                 :aria-pressed="isDrawingMode" @click="isDrawingMode = !isDrawingMode">
-                <Pencil1Icon class="w-6 h-6" />
+                <Pencil1Icon class="w-4 h-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">{{ isDrawingMode ? '停止绘制' : '开启路径绘制模式' }}</TooltipContent>
@@ -65,9 +65,9 @@
           <Tooltip v-if="isDrawingMode">
             <TooltipTrigger asChild>
               <Button variant="outline" size="icon" aria-label="撤回上一步" :disabled="!canUndo"
-                class="h-10 w-10 shadow-2xl border-border/30 bg-card/85 backdrop-blur-md ring-1 ring-white/10 text-muted-foreground hover:bg-accent transition-all duration-300"
+                class="h-10 w-10 shadow-lg shadow-black/10 border-border/60 bg-card/85 backdrop-blur-md ring-1 ring-white/10 text-muted-foreground hover:bg-accent transition-all duration-300"
                 @click="undoLastPoint">
-                <ResetIcon class="w-6 h-6" />
+                <ResetIcon class="w-4 h-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" :side-offset="8">撤回上一步</TooltipContent>
@@ -77,13 +77,13 @@
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="outline" size="icon" aria-label="切换地图图层" :aria-expanded="!isLayerSwitcherCollapsed"
-                class="h-10 w-10 shadow-2xl border-border/30 bg-card/85 backdrop-blur-md ring-1 ring-white/10 transition-all duration-300"
+                class="h-10 w-10 shadow-lg shadow-black/10 border-border/60 bg-card/85 backdrop-blur-md ring-1 ring-white/10 transition-all duration-300"
                 :class="[
                   !isLayerSwitcherCollapsed
                     ? 'bg-primary text-primary-foreground border-primary shadow-primary/30'
                     : 'text-muted-foreground hover:bg-accent'
                 ]" @click="isLayerSwitcherCollapsed = !isLayerSwitcherCollapsed">
-                <LayersIcon class="w-6 h-6" :class="{ 'text-primary': isLayerSwitcherCollapsed }" />
+                <LayersIcon class="w-4 h-4" :class="{ 'text-primary': isLayerSwitcherCollapsed }" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" align="end">切换地图图层</TooltipContent>
@@ -94,7 +94,7 @@
             leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-x-0 scale-100"
             leave-to-class="opacity-0 translate-x-4 scale-95">
             <Card v-show="!isLayerSwitcherCollapsed"
-              class="absolute top-full right-0 mt-2 z-30 w-48 overflow-hidden shadow-2xl border-border/30 bg-card/95 backdrop-blur-xl ring-1 ring-white/10 p-1.5 flex flex-col gap-1">
+              class="absolute top-full right-0 mt-2 z-30 w-48 overflow-hidden shadow-lg shadow-black/10 border-border/60 bg-card/95 backdrop-blur-xl ring-1 ring-white/10 p-1.5 flex flex-col gap-1">
               <div v-for="layer in availableLayers" :key="layer.id"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all text-xs font-semibold"
                 :class="[
@@ -113,12 +113,12 @@
       <div class="map-footer" :class="{ 'is-route-open': !isRouteCollapsed }">
         <div class="map-stats pointer-events-none">
           <Card
-            class="flex flex-row items-center justify-between gap-3 p-2.5 px-3 shadow-2xl border-border/30 bg-card/80 backdrop-blur-md ring-1 ring-white/10 pointer-events-auto hover:bg-card/90 transition-all rounded-xl">
+            class="flex flex-row items-center justify-between min-h-10 gap-3 px-3 py-2 shadow-lg shadow-black/10 border-border/60 bg-card/80 backdrop-blur-md ring-1 ring-white/10 pointer-events-auto hover:bg-card/90 transition-all rounded-xl">
             <!-- Points -->
             <div class="flex items-center gap-2.5">
               <DrawingPinIcon class="w-4 h-4 text-primary" />
               <div class="flex items-baseline gap-1">
-                <span class="text-sm font-semibold mono tracking-tight break-all">{{ routePoints.length }}</span>
+                <span class="text-sm font-semibold font-mono tabular-nums tracking-tight break-all">{{ routePoints.length }}</span>
                 <span class="text-[11px] font-medium tracking-wide text-muted-foreground/70">PTS</span>
               </div>
             </div>
@@ -129,7 +129,7 @@
             <div class="flex items-center gap-2.5 min-w-0">
               <RulerHorizontalIcon class="w-4 h-4 text-primary" />
               <div class="flex items-baseline gap-1">
-                <span class="text-sm font-semibold mono tracking-tight text-primary break-all">{{
+                <span class="text-sm font-semibold font-mono tabular-nums tracking-tight text-primary break-all">{{
                   formattedDistance.split(' ')[0]
                 }}</span>
                 <span class="text-[11px] font-medium tracking-wide text-muted-foreground/70">{{
@@ -141,9 +141,9 @@
         </div>
 
         <!-- 路线管理 -->
-        <Card class="map-route-panel gap-0 p-0 shadow-2xl border-border/30 bg-card/90 backdrop-blur-md ring-1 ring-white/10 rounded-xl pointer-events-auto">
+        <Card class="map-route-panel gap-0 p-0 shadow-lg shadow-black/10 border-border/60 bg-card/90 backdrop-blur-md ring-1 ring-white/10 rounded-xl pointer-events-auto">
           <button type="button" :aria-expanded="!isRouteCollapsed" aria-controls="route-panel-content"
-            class="map-route-toggle h-10 shrink-0 flex items-center justify-between gap-2 px-3 cursor-pointer select-none border-border/30 hover:bg-primary/5 transition-all"
+            class="map-route-toggle h-10 shrink-0 flex items-center justify-between gap-2 px-3 cursor-pointer select-none border-border/60 hover:bg-primary/5 transition-all"
             :class="{ 'border-b': !isRouteCollapsed }"
             @click="isRouteCollapsed = !isRouteCollapsed">
             <div
@@ -662,7 +662,7 @@ defineExpose({
     gap: 8px;
   }
 
-  .map-stats :deep(.mono) {
+  .map-stats :deep(.font-mono) {
     font-size: 12px;
   }
 

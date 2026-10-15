@@ -1,35 +1,35 @@
 <template>
   <Card
-    class="flex flex-col gap-0 p-0 bg-card/90 border-border/60 shadow-xl shadow-black/5 overflow-hidden text-foreground ring-1 ring-white/5 font-sans">
-    <div class="relative flex items-center justify-between gap-2 p-4 border-b border-border/40 bg-card/95">
-      <div class="flex items-center gap-3">
-        <div class="p-2 rounded-2xl bg-primary/10 border border-primary/15 shadow-inner shadow-primary/10">
-          <ActivityLogIcon class="w-5 h-5 text-primary" />
+    class="panel-card flex flex-col gap-0 p-0 overflow-hidden font-sans">
+    <div class="panel-header">
+      <div class="flex min-w-0 items-center gap-2">
+        <div class="panel-icon">
+          <ActivityLogIcon class="w-4 h-4 text-primary" />
         </div>
         <div class="min-w-0">
-          <span class="block text-sm font-semibold tracking-tight text-foreground/90">跑步控制</span>
-          <span class="block text-xs font-medium text-muted-foreground mt-0.5">速度、偏移与循环策略</span>
+          <span class="panel-title">跑步控制</span>
+          <span class="panel-description">速度、偏移与循环策略</span>
         </div>
       </div>
       <Badge :variant="isPaused ? 'warning' : isRunning ? 'default' : 'secondary'"
-        class="text-[11px] font-semibold px-2.5 py-0 h-5 rounded-full border-none shadow-sm shadow-black/5">
+        class="shrink-0 text-xs font-semibold px-2 py-0 h-5 rounded-full border-none shadow-sm shadow-black/5">
         {{ statusText }}
       </Badge>
     </div>
 
-    <div class="p-4 flex flex-col gap-4 bg-card/70">
+    <div class="p-3 flex flex-col gap-3 bg-card/70">
       <!-- 速度设置 -->
-      <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
-        <div class="flex justify-between items-center group/item">
-          <label
+      <div class="space-y-3 rounded-lg border border-border/40 bg-background/45 p-3">
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 group/item">
+          <label for="run-speed"
             class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">平均速度</label>
           <div class="flex items-center gap-2">
-            <input v-model.number="displaySpeed" type="number" :min="speedRange.min" :max="speedRange.max"
+            <input id="run-speed" v-model.number="displaySpeed" type="number" :min="speedRange.min" :max="speedRange.max"
               :step="speedRange.step" :disabled="isRunning"
-              class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+              class="h-8 w-14 px-2 text-right text-sm font-mono tabular-nums bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <Select v-model="speedUnit" :disabled="isRunning">
               <SelectTrigger size="sm"
-                class="w-[88px] border-border/50 bg-card/80 text-sm font-medium">
+                class="w-20 border-border/50 bg-card/80 px-2 text-xs font-medium">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -45,42 +45,42 @@
       </div>
 
       <!-- 速度波动 -->
-      <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
-        <div class="flex justify-between items-center group/item">
-          <label
+      <div class="space-y-3 rounded-lg border border-border/40 bg-background/45 p-3">
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 group/item">
+          <label for="run-variance"
             class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">速度波动</label>
-          <div class="flex items-baseline gap-2">
-            <input v-model.number="speedVariance" type="number" min="0" max="30" step="1" :disabled="isRunning"
-              class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <span class="text-xs font-medium text-muted-foreground text-right w-8">±%</span>
+          <div class="flex items-center gap-2">
+            <input id="run-variance" v-model.number="speedVariance" type="number" min="0" max="30" step="1" :disabled="isRunning"
+              class="h-8 w-14 px-2 text-right text-sm font-mono tabular-nums bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+            <span class="text-xs font-medium text-muted-foreground w-20 pl-2 text-left">±%</span>
           </div>
         </div>
         <Slider v-model="speedVarianceArray" :min="0" :max="30" :step="1" :disabled="isRunning" class="py-1" />
       </div>
 
       <!-- 路线偏移 -->
-      <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
-        <div class="flex justify-between items-center group/item">
-          <label
+      <div class="space-y-3 rounded-lg border border-border/40 bg-background/45 p-3">
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 group/item">
+          <label for="run-offset"
             class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">路线偏移</label>
-          <div class="flex items-baseline gap-2">
-            <input v-model.number="routeOffset" type="number" min="0" max="10" step="0.5" :disabled="isRunning"
-              class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <span class="text-xs font-medium text-muted-foreground text-right w-8">m</span>
+          <div class="flex items-center gap-2">
+            <input id="run-offset" v-model.number="routeOffset" type="number" min="0" max="10" step="0.5" :disabled="isRunning"
+              class="h-8 w-14 px-2 text-right text-sm font-mono tabular-nums bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+            <span class="text-xs font-medium text-muted-foreground w-20 pl-2 text-left">m</span>
           </div>
         </div>
         <Slider v-model="routeOffsetArray" :min="0" :max="10" :step="0.5" :disabled="isRunning" class="py-1" />
       </div>
 
       <!-- 循环圈数 -->
-      <div class="space-y-3 rounded-2xl border border-border/35 bg-background/45 p-4 shadow-inner shadow-black/5">
-        <div class="flex justify-between items-center group/item">
-          <label
+      <div class="space-y-3 rounded-lg border border-border/40 bg-background/45 p-3">
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 group/item">
+          <label for="run-loops"
             class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">循环圈数</label>
-          <div class="flex items-baseline gap-2">
-            <input v-model.number="loopCount" type="number" min="1" max="10" step="1" :disabled="isRunning"
-              class="w-16 px-2 py-1 text-sm font-mono bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <span class="text-xs font-medium text-muted-foreground text-right w-8">圈</span>
+          <div class="flex items-center gap-2">
+            <input id="run-loops" v-model.number="loopCount" type="number" min="1" max="10" step="1" :disabled="isRunning"
+              class="h-8 w-14 px-2 text-right text-sm font-mono tabular-nums bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+            <span class="text-xs font-medium text-muted-foreground w-20 pl-2 text-left">圈</span>
           </div>
         </div>
         <Slider v-model="loopCountArray" :min="1" :max="10" :step="1" :disabled="isRunning" class="py-1" />
@@ -93,30 +93,30 @@
           class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent">
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-secondary/20 py-2">
-          <span class="text-xs font-medium text-muted-foreground">Progress</span>
-          <span class="text-sm font-semibold mono tracking-tight">{{ status.currentIndex }}/{{ status.totalPoints
+          <span class="text-xs font-medium text-muted-foreground">进度</span>
+          <span class="text-sm font-semibold font-mono tabular-nums tracking-tight">{{ status.currentIndex }}/{{ status.totalPoints
             }}</span>
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-primary/10 py-2">
-          <span class="text-xs font-medium text-muted-foreground">Distance</span>
-          <span class="text-sm font-semibold mono tracking-tight text-primary">{{
+          <span class="text-xs font-medium text-muted-foreground">距离</span>
+          <span class="text-sm font-semibold font-mono tabular-nums tracking-tight text-primary">{{
             formatDist(status.distance)
           }}</span>
         </div>
         <div class="flex flex-col items-center gap-1.5 rounded-xl bg-secondary/20 py-2">
-          <span class="text-xs font-medium text-muted-foreground">Time</span>
-          <span class="text-sm font-semibold mono tracking-tight">{{
+          <span class="text-xs font-medium text-muted-foreground">用时</span>
+          <span class="text-sm font-semibold font-mono tabular-nums tracking-tight">{{
             formatTimeValue(status.elapsedTimeMs)
           }}</span>
         </div>
       </div>
 
       <!-- 控制按钮 -->
-      <div class="flex gap-3 pt-1">
+      <div class="flex gap-2 pt-1">
         <Tooltip v-if="!isRunning && !isPaused">
           <TooltipTrigger asChild>
             <Button
-              class="flex-1 h-12 gap-2 text-sm font-semibold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+              class="flex-1 h-10 gap-2 text-sm font-semibold shadow-lg shadow-primary/20 transition-all active:opacity-90"
               :disabled="!canStart" @click="startRun">
               <PlayIcon class="w-4 h-4 fill-current" />
               <span>开始任务</span>
@@ -128,7 +128,7 @@
         <Tooltip v-if="isRunning">
           <TooltipTrigger asChild>
             <Button variant="secondary"
-              class="flex-1 h-12 gap-2 text-sm font-semibold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 transition-all hover:scale-105 active:scale-95"
+              class="flex-1 h-10 gap-2 text-sm font-semibold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 transition-all active:opacity-90"
               @click="pauseRun">
               <PauseIcon class="w-4 h-4 fill-current" />
               <span>暂停</span>
@@ -140,7 +140,7 @@
         <Tooltip v-if="isPaused">
           <TooltipTrigger asChild>
             <Button
-              class="flex-1 h-12 gap-2 text-sm font-semibold shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+              class="flex-1 h-10 gap-2 text-sm font-semibold shadow-lg shadow-primary/20 transition-all active:opacity-90"
               @click="resumeRun">
               <PlayIcon class="w-4 h-4 fill-current" />
               <span>恢复</span>
@@ -152,7 +152,7 @@
         <Tooltip v-if="isRunning || isPaused">
           <TooltipTrigger asChild>
             <Button variant="destructive"
-              class="flex-1 h-12 gap-2 text-sm font-semibold shadow-lg shadow-destructive/20 transition-all hover:scale-105 active:scale-95"
+              class="flex-1 h-10 gap-2 text-sm font-semibold shadow-lg shadow-destructive/20 transition-all active:opacity-90"
               @click="stopRun">
               <StopIcon class="w-4 h-4 fill-current" />
               <span>停止</span>

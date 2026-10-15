@@ -1,14 +1,14 @@
 <template>
   <div class="log-panel flex flex-col h-full bg-card overflow-hidden text-foreground font-sans">
-    <div class="log-toolbar flex shrink-0 flex-wrap justify-between items-center gap-2 p-2 border-b border-border/30 bg-secondary/5">
+    <div class="log-toolbar flex shrink-0 flex-wrap justify-between items-center gap-2 px-4 py-2 border-b border-border/30 bg-secondary/5">
       <div class="log-filters flex flex-wrap gap-1">
         <Tooltip v-for="lv in levels" :key="lv">
           <TooltipTrigger asChild>
             <button
-              class="log-filter h-7 min-w-10 px-2 items-center justify-center rounded-lg text-xs font-semibold uppercase transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50"
+              class="log-filter h-7 min-w-10 px-2 inline-flex items-center justify-center rounded-lg text-xs font-semibold uppercase transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95 disabled:opacity-50"
               :class="[
                 lv === filterLevel
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/10'
                   : 'bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground'
               ]" @click="filterLevel = lv">
               {{ lv }}
@@ -44,12 +44,12 @@
     </div>
 
     <div ref="logContainer"
-      class="log-list app-scrollbar flex-1 min-h-0 overflow-y-auto p-2 font-sans text-[13px] leading-relaxed select-text bg-background/30 selection:bg-primary/20">
+      class="log-list app-scrollbar flex-1 min-h-0 overflow-y-auto px-2 py-2 font-sans text-[13px] leading-relaxed select-text bg-background/30 selection:bg-primary/20">
       <div v-for="(log, index) in filteredLogs" :key="index"
         class="group mb-1 py-1 rounded-lg px-2 transition-all border border-transparent hover:bg-secondary/20 flex gap-3 items-baseline"
         :class="getLogClass(log.level)">
         <span
-          class="text-muted-foreground font-medium w-16 shrink-0 select-none">
+          class="text-muted-foreground font-mono tabular-nums w-16 shrink-0 select-none">
           {{ log.time.split(' ')[1] || log.time }}
         </span>
         <div class="flex-1 min-w-0">
@@ -180,8 +180,8 @@ onUnmounted(() => {
   .log-filter {
     min-width: 32px;
     padding-inline: 6px;
-    font-size: 9px;
-    letter-spacing: 0.05em;
+    font-size: 11px;
+    letter-spacing: normal;
   }
 
   .log-list {

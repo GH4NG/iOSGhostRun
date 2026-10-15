@@ -1,22 +1,22 @@
 <template>
-  <Card class="flex flex-col gap-0 p-0 overflow-hidden border-border/60 bg-card/90 shadow-xl shadow-black/5 ring-1 ring-white/5 font-sans">
-    <div class="relative flex items-center justify-between gap-2 p-4 border-b border-border/40 bg-card/95">
-      <div class="flex items-center gap-3">
-        <div class="p-2 rounded-2xl bg-primary/10 border border-primary/15 shadow-inner shadow-primary/10">
-          <MobileIcon class="w-5 h-5 text-primary" />
+  <Card class="panel-card flex flex-col gap-0 p-0 overflow-hidden font-sans">
+    <div class="panel-header">
+      <div class="flex min-w-0 items-center gap-2">
+        <div class="panel-icon">
+          <MobileIcon class="w-4 h-4 text-primary" />
         </div>
         <div class="min-w-0">
-          <span class="block text-sm font-semibold tracking-tight text-foreground/90">设备管理</span>
-          <span class="block text-xs font-medium text-muted-foreground mt-0.5">USB 连接与镜像状态</span>
+          <span class="panel-title">设备管理</span>
+          <span class="panel-description">USB 连接与镜像状态</span>
         </div>
       </div>
       <Badge v-if="devices.length > 0" variant="outline"
-        class="mr-1 h-6 rounded-full border-primary/35 bg-primary/15 px-2.5 text-xs font-semibold text-primary">
+        class="shrink-0 h-5 rounded-full border-primary/35 bg-primary/15 px-2.5 text-xs font-semibold text-primary">
         {{ devices.length }} 台</Badge>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon" aria-label="刷新设备列表"
-            class="w-8 h-8 rounded-full border border-transparent hover:border-primary/20 hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
+            class="w-8 h-8 shrink-0 rounded-lg border border-transparent hover:border-primary/20 hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
             @click="refreshDevices" :disabled="loading">
             <UpdateIcon class="w-4 h-4" :class="{ 'animate-spin': loading }" />
           </Button>
@@ -35,18 +35,18 @@
       <p class="text-xs leading-relaxed text-muted-foreground mt-1.5">请确保设备已通过 USB 连接并信任此电脑</p>
     </div>
 
-    <div v-else class="flex flex-col gap-3 p-4 overflow-y-auto max-h-[300px] no-scrollbar bg-card/70">
+    <div v-else class="flex flex-col gap-3 p-3 overflow-y-auto max-h-[300px] no-scrollbar bg-card/70">
       <div v-for="device in devices" :key="device.UDID"
-        class="flex flex-col p-4 rounded-2xl border cursor-pointer transition-all duration-300 relative group overflow-hidden"
+        class="flex flex-col p-3 rounded-xl border cursor-pointer transition-all duration-300 relative group overflow-hidden"
         :class="[
           selectedUdid === device.UDID
             ? 'bg-primary/10 border-primary/35 shadow-lg shadow-primary/10'
             : 'bg-secondary/20 border-transparent hover:bg-secondary/40 hover:border-border/60 hover:shadow-md hover:shadow-black/5'
         ]" @click="selectDevice(device)">
         <div v-if="selectedUdid === device.UDID" class="absolute inset-y-3 left-0 w-1 rounded-r-full bg-primary"></div>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
           <div
-            class="w-11 h-11 shrink-0 flex items-center justify-center bg-background/80 rounded-2xl border border-border/50 group-hover:border-primary/30 group-hover:shadow-lg transition-all duration-300">
+            class="w-10 h-10 shrink-0 flex items-center justify-center bg-background/80 rounded-lg border border-border/50 group-hover:border-primary/30 group-hover:shadow-lg transition-all duration-300">
             <MobileIcon class="w-6 h-6 text-primary/80" />
           </div>
           <div class="flex-1 min-w-0">

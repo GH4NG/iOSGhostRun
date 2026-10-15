@@ -82,7 +82,7 @@
           class="absolute inset-0 z-30 bg-black/30 backdrop-blur-[1px]" @click="isSidebarCollapsed = true"></button>
         <!-- 左侧面板 -->
         <aside
-          class="app-sidebar min-h-0 shrink-0 border-r border-border/70 bg-card/95 backdrop-blur-md overflow-hidden shadow-2xl z-40 transition-[width] duration-300"
+          class="app-sidebar min-h-0 shrink-0 border-r border-border/70 bg-card/95 backdrop-blur-md overflow-hidden shadow-lg shadow-black/5 z-40 transition-[width] duration-300"
           :class="isSidebarCollapsed ? 'w-14' : 'w-80'">
           <div v-if="isSidebarCollapsed" class="h-full flex flex-col items-center py-4 px-2 gap-3">
             <TitlebarButton
@@ -98,7 +98,7 @@
           </div>
 
           <div v-show="!isSidebarCollapsed" class="h-full flex flex-col min-h-0">
-            <div class="shrink-0 flex items-center justify-between px-4 pt-4 pb-2">
+            <div class="shrink-0 flex items-center justify-between px-4 py-3">
               <div class="text-sm font-medium text-muted-foreground">
                 控制面板
               </div>
@@ -111,7 +111,7 @@
 
             <div class="flex-1 min-h-0">
               <ScrollArea class="h-full">
-                <div class="flex flex-col gap-4 px-3 pt-2 pb-5">
+                <div class="flex flex-col gap-3 px-4 pb-4">
                   <DevicePanel v-model="selectedUdid" />
                   <RunningControl :udid="selectedUdid" :route-points="routePoints" @position-update="onPositionUpdate"
                     @state-change="onRunStateChange" />
@@ -134,9 +134,9 @@
             class="app-log-panel min-h-0 shrink-0 bg-card/85 backdrop-blur-xl border-t border-border z-30 transition-[height] duration-300 flex flex-col shadow-[0_-10px_30px_rgba(0,0,0,0.1)]"
             :class="{ 'is-open': !isLogCollapsed }">
             <button type="button" :aria-expanded="!isLogCollapsed" aria-controls="log-panel-content"
-              class="h-9 shrink-0 flex items-center px-4 gap-3 cursor-pointer select-none bg-secondary/10 hover:bg-secondary/20 text-muted-foreground hover:text-foreground transition-all group border-b border-transparent"
+              class="h-10 shrink-0 flex items-center px-4 gap-2 cursor-pointer select-none bg-secondary/10 hover:bg-secondary/20 text-muted-foreground hover:text-foreground transition-all group border-b border-transparent"
               :class="{ 'border-border/30': !isLogCollapsed }" @click="isLogCollapsed = !isLogCollapsed">
-              <div class="p-1.5 rounded-lg bg-secondary/50 group-hover:scale-110 transition-transform">
+              <div class="p-1 rounded-md bg-secondary/50">
                 <ChevronDownIcon v-if="!isLogCollapsed" class="w-4 h-4" />
                 <ChevronUpIcon v-else class="w-4 h-4" />
               </div>
@@ -480,7 +480,7 @@ onUnmounted(() => {
 
 <style>
 .app-log-panel {
-  height: 36px;
+  height: 40px;
 }
 
 .app-log-panel.is-open {

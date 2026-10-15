@@ -1,6 +1,6 @@
 <template>
   <Card class="flex flex-col gap-0 p-0 bg-card border-none shadow-none font-sans text-foreground">
-    <div class="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-border/40">
+    <div class="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-border/40">
       <div class="flex min-w-0 items-center gap-2">
         <div class="shrink-0 p-1.5 rounded-lg bg-primary/10">
           <PinFilledIcon class="w-5 h-5 text-primary" />
@@ -11,7 +11,7 @@
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="新建路线"
-              class="w-8 h-8 rounded-full hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
+              class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
               @click="executeClearRoute">
               <PlusIcon class="w-4 h-4" />
             </Button>
@@ -22,7 +22,7 @@
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="导入路线"
-              class="w-8 h-8 rounded-full hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
+              class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
               @click="showImport = !showImport">
               <DownloadIcon class="w-4 h-4" />
             </Button>
@@ -33,7 +33,7 @@
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="导出当前路线"
-              class="w-8 h-8 rounded-full hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
+              class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
               :disabled="routePoints.length === 0" @click="exportRoute(routePoints)">
               <UploadIcon class="w-4 h-4" />
             </Button>
@@ -44,7 +44,7 @@
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="清空当前路线"
-              class="w-8 h-8 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
+              class="w-8 h-8 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
               :disabled="routePoints.length === 0" @click="executeClearRoute">
               <TrashIcon class="w-4 h-4" />
             </Button>
@@ -54,7 +54,7 @@
       </div>
     </div>
 
-    <div class="p-4 min-w-0 flex flex-col gap-4">
+    <div class="p-3 min-w-0 flex flex-col gap-3">
       <!-- 导入路线区域 -->
       <div v-if="showImport"
         class="flex flex-col gap-3 p-4 bg-secondary/10 rounded-xl border border-border/40 animate-in fade-in slide-in-from-top-2">
@@ -113,7 +113,7 @@
         <Tooltip>
           <TooltipTrigger asChild>
             <Button size="icon"
-              class="h-10 w-10 shrink-0 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+              class="h-10 w-10 shrink-0 shadow-lg shadow-primary/20 transition-all active:opacity-90"
               :disabled="!canSave" @click="saveCurrentRoute">
               <PlusIcon class="w-4 h-4" />
             </Button>
@@ -139,7 +139,7 @@
 
         <div v-else class="flex flex-col gap-2">
           <div v-for="route in savedRoutes" :key="route.name" :aria-current="activeRouteName === route.name ? 'true' : undefined"
-            class="flex items-center gap-3 p-4 rounded-xl border transition-all duration-300 cursor-pointer group hover:shadow-lg hover:shadow-black/5"
+            class="flex items-center gap-2 p-3 rounded-lg border transition-all duration-300 cursor-pointer group hover:shadow-lg hover:shadow-black/5"
             :class="activeRouteName === route.name
               ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
               : 'border-transparent bg-secondary/20 hover:border-primary/30 hover:bg-primary/5'"
@@ -163,7 +163,7 @@
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" :aria-label="`导出路线 ${route.name}`"
-                  class="w-8 h-8 rounded-full text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all"
+                  class="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all"
                   @click.stop="exportRoute(route.points, route.name)">
                   <UploadIcon class="w-4 h-4" />
                 </Button>
@@ -173,7 +173,8 @@
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon"
-                  class="w-8 h-8 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"
+                  :aria-label="`删除路线 ${route.name}`"
+                  class="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all opacity-100"
                   @click.stop="deleteRouteByName(route.name)">
                   <TrashIcon class="w-4 h-4" />
                 </Button>

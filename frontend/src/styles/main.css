@@ -33,14 +33,6 @@
     font-display: swap;
 }
 
-@font-face {
-    font-family: 'MiSans';
-    src: url('../assets/fonts/MiSans-Heavy.woff2') format('woff2');
-    font-style: normal;
-    font-weight: 900;
-    font-display: swap;
-}
-
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -171,4 +163,27 @@
     display: none;
     width: 0;
     height: 0;
+}
+
+/* Shared panel geometry keeps the device and running sections on the same grid. */
+@layer components {
+    .panel-card {
+        @apply border-border/60 bg-card/90 text-foreground shadow-sm;
+    }
+
+    .panel-header {
+        @apply flex min-h-16 items-center justify-between gap-2 border-b border-border/40 bg-card/95 p-3;
+    }
+
+    .panel-icon {
+        @apply flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10;
+    }
+
+    .panel-title {
+        @apply block text-sm font-semibold leading-5 tracking-tight text-foreground;
+    }
+
+    .panel-description {
+        @apply mt-0.5 block text-xs leading-5 text-muted-foreground;
+    }
 }
