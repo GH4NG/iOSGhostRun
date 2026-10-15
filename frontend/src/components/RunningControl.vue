@@ -1,5 +1,5 @@
 <template>
-  <Card
+  <Card :aria-busy="isOperating"
     class="panel-card flex flex-col gap-0 p-0 overflow-hidden font-sans">
     <div class="panel-header">
       <div class="flex min-w-0 items-center gap-2">
@@ -25,9 +25,9 @@
             class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">平均速度</label>
           <div class="flex items-center gap-2">
             <input id="run-speed" v-model.number="displaySpeed" type="number" :min="speedRange.min" :max="speedRange.max"
-              :step="speedRange.step" :disabled="isRunning"
+              :step="speedRange.step" :disabled="parametersDisabled"
               class="h-8 w-14 px-2 text-right text-sm font-mono tabular-nums bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            <Select v-model="speedUnit" :disabled="isRunning">
+            <Select v-model="speedUnit" :disabled="parametersDisabled">
               <SelectTrigger size="sm"
                 class="w-20 border-border/50 bg-card/80 px-2 text-xs font-medium">
                 <SelectValue />
@@ -41,7 +41,7 @@
           </div>
         </div>
         <Slider v-model="speedArray" :min="speedRange.min" :max="speedRange.max" :step="speedRange.step"
-          :disabled="isRunning" class="py-1" />
+          :disabled="parametersDisabled" class="py-1" />
       </div>
 
       <!-- 速度波动 -->
@@ -50,12 +50,12 @@
           <label for="run-variance"
             class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">速度波动</label>
           <div class="flex items-center gap-2">
-            <input id="run-variance" v-model.number="speedVariance" type="number" min="0" max="30" step="1" :disabled="isRunning"
+            <input id="run-variance" v-model.number="speedVariance" type="number" min="0" max="30" step="1" :disabled="parametersDisabled"
               class="h-8 w-14 px-2 text-right text-sm font-mono tabular-nums bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <span class="text-xs font-medium text-muted-foreground w-20 pl-2 text-left">±%</span>
           </div>
         </div>
-        <Slider v-model="speedVarianceArray" :min="0" :max="30" :step="1" :disabled="isRunning" class="py-1" />
+        <Slider v-model="speedVarianceArray" :min="0" :max="30" :step="1" :disabled="parametersDisabled" class="py-1" />
       </div>
 
       <!-- 路线偏移 -->
@@ -64,12 +64,12 @@
           <label for="run-offset"
             class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">路线偏移</label>
           <div class="flex items-center gap-2">
-            <input id="run-offset" v-model.number="routeOffset" type="number" min="0" max="10" step="0.5" :disabled="isRunning"
+            <input id="run-offset" v-model.number="routeOffset" type="number" min="0" max="10" step="0.5" :disabled="parametersDisabled"
               class="h-8 w-14 px-2 text-right text-sm font-mono tabular-nums bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <span class="text-xs font-medium text-muted-foreground w-20 pl-2 text-left">m</span>
           </div>
         </div>
-        <Slider v-model="routeOffsetArray" :min="0" :max="10" :step="0.5" :disabled="isRunning" class="py-1" />
+        <Slider v-model="routeOffsetArray" :min="0" :max="10" :step="0.5" :disabled="parametersDisabled" class="py-1" />
       </div>
 
       <!-- 循环圈数 -->
@@ -78,12 +78,12 @@
           <label for="run-loops"
             class="text-xs font-semibold text-muted-foreground group-hover/item:text-primary transition-colors">循环圈数</label>
           <div class="flex items-center gap-2">
-            <input id="run-loops" v-model.number="loopCount" type="number" min="1" max="10" step="1" :disabled="isRunning"
+            <input id="run-loops" v-model.number="loopCount" type="number" min="1" max="10" step="1" :disabled="parametersDisabled"
               class="h-8 w-14 px-2 text-right text-sm font-mono tabular-nums bg-background border border-border/40 rounded-md focus:border-primary/40 focus:ring-1 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             <span class="text-xs font-medium text-muted-foreground w-20 pl-2 text-left">圈</span>
           </div>
         </div>
-        <Slider v-model="loopCountArray" :min="1" :max="10" :step="1" :disabled="isRunning" class="py-1" />
+        <Slider v-model="loopCountArray" :min="1" :max="10" :step="1" :disabled="parametersDisabled" class="py-1" />
       </div>
 
       <!-- 状态信息 -->
@@ -119,7 +119,7 @@
               class="flex-1 h-10 gap-2 text-sm font-semibold shadow-lg shadow-primary/20 transition-all active:opacity-90"
               :disabled="!canStart" @click="startRun">
               <PlayIcon class="w-4 h-4 fill-current" />
-              <span>开始任务</span>
+              <span>{{ pendingAction === 'start' ? '启动中…' : '开始任务' }}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>开始同步位置至设备</TooltipContent>
@@ -129,9 +129,9 @@
           <TooltipTrigger asChild>
             <Button variant="secondary"
               class="flex-1 h-10 gap-2 text-sm font-semibold bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 transition-all active:opacity-90"
-              @click="pauseRun">
+              :disabled="isOperating || props.disabled" @click="pauseRun">
               <PauseIcon class="w-4 h-4 fill-current" />
-              <span>暂停</span>
+              <span>{{ pendingAction === 'pause' ? '暂停中…' : '暂停' }}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>暂停当前任务</TooltipContent>
@@ -141,9 +141,9 @@
           <TooltipTrigger asChild>
             <Button
               class="flex-1 h-10 gap-2 text-sm font-semibold shadow-lg shadow-primary/20 transition-all active:opacity-90"
-              @click="resumeRun">
+              :disabled="isOperating || props.disabled" @click="resumeRun">
               <PlayIcon class="w-4 h-4 fill-current" />
-              <span>恢复</span>
+              <span>{{ pendingAction === 'resume' ? '恢复中…' : '恢复' }}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>恢复当前任务</TooltipContent>
@@ -153,9 +153,9 @@
           <TooltipTrigger asChild>
             <Button variant="destructive"
               class="flex-1 h-10 gap-2 text-sm font-semibold shadow-lg shadow-destructive/20 transition-all active:opacity-90"
-              @click="stopRun">
+              :disabled="isOperating || props.disabled" @click="stopRun">
               <StopIcon class="w-4 h-4 fill-current" />
-              <span>停止</span>
+              <span>{{ pendingAction === 'stop' ? '停止中…' : '停止' }}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>终止当前任务</TooltipContent>
@@ -186,12 +186,14 @@ type SpeedUnit = 'km/h' | 'm/s' | 'mph'
 const props = defineProps<{
   udid: string
   routePoints: RoutePoint[]
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
   'position-update': [pos: { lat: number; lon: number }]
   'state-change': [state: RunningStatus['state']]
   completed: []
+  'busy-change': [busy: boolean]
 }>()
 
 const { showError: showErrorDialog, showSuccess } = useNotification()
@@ -225,12 +227,22 @@ const loopCount = computed({
 const status = ref<RunningStatus | null>(null)
 let statusRevision = 0
 let disposed = false
+const STATUS_CHECK_INTERVAL_MS = 5000
+const pendingAction = ref<'start' | 'pause' | 'resume' | 'stop' | null>(null)
+const isOperating = computed(() => pendingAction.value !== null)
+const parametersDisabled = computed(() => isRunning.value || isOperating.value || props.disabled || !status.value)
 let statusInterval: ReturnType<typeof setInterval> | null = null
+let statusRequest: Promise<void> | null = null
+let lastStatusAt = 0
+
+watch(isOperating, busy => emit('busy-change', busy), { flush: 'sync' })
 let offPosition: (() => void) | null = null
 let offCompleted: (() => void) | null = null
 let offError: (() => void) | null = null
 
 function applyStatus(data: RunningStatus) {
+  if (disposed) return
+  lastStatusAt = Date.now()
   statusRevision++
   status.value = data
 }
@@ -301,7 +313,10 @@ const loopCountArray = computed({
 
 const isRunning = computed(() => status.value?.state === 'running')
 const isPaused = computed(() => status.value?.state === 'paused')
-const canStart = computed(() => props.udid && props.routePoints.length >= 2)
+const canStart = computed(() =>
+  status.value?.state === 'idle' && props.udid && props.routePoints.length >= 2 &&
+  !isOperating.value && !props.disabled
+)
 
 watch(
   () => status.value?.state,
@@ -312,6 +327,10 @@ watch(
 )
 
 const statusText = computed(() => {
+  if (pendingAction.value) {
+    return { start: '启动中…', pause: '暂停中…', resume: '恢复中…', stop: '停止中…' }[pendingAction.value]
+  }
+  if (!status.value) return '同步中…'
   if (isRunning.value) return '运行中'
   if (isPaused.value) return '已暂停'
   return '待机'
@@ -325,77 +344,105 @@ function formatTimeValue(ms: number) {
   return formatTime(ms)
 }
 
+async function runAction(
+  action: NonNullable<typeof pendingAction.value>,
+  errorMessage: string,
+  request: () => Promise<void>
+) {
+  if (disposed || isOperating.value || props.disabled) return
+  pendingAction.value = action
+  // 操作前发出的查询不应覆盖操作后的状态。
+  statusRevision++
+  try {
+    await request()
+  } catch (e) {
+    if (!disposed) showErrorDialog(`${errorMessage}: ${e instanceof Error ? e.message : '未知错误'}`)
+  } finally {
+    // 先等旧查询收尾，再读取操作完成后的状态，避免复用操作前的快照。
+    await syncStatusAfterPending(true)
+    pendingAction.value = null
+  }
+}
+
 async function startRun() {
   if (!canStart.value) return
-
-  try {
-    await RunningService.SetLoopCount(loopCount.value)
-    await RunningService.SetRandomization(speedVariance.value / 100, routeOffset.value)
-    await RunningService.StartRun(props.udid, props.routePoints, speed.value)
-    await updateStatus()
-  } catch (e) {
-    showErrorDialog(`启动跑步失败: ${e instanceof Error ? e.message : '未知错误'}`)
-  }
+  const params = { ...paramsStore.params }
+  const udid = props.udid
+  const route = props.routePoints.map(point => ({ ...point }))
+  await runAction('start', '启动跑步失败', async () => {
+    await RunningService.SetLoopCount(params.loopCount)
+    await RunningService.SetRandomization(params.speedVariance / 100, params.routeOffset)
+    await RunningService.StartRun(udid, route, params.speed)
+  })
 }
 
 async function pauseRun() {
-  try {
+  if (!isRunning.value) return
+  await runAction('pause', '暂停失败', async () => {
     await RunningService.PauseRun()
-    await updateStatus()
-  } catch (e) {
-    showErrorDialog(`暂停失败: ${e instanceof Error ? e.message : '未知错误'}`)
-  }
+  })
 }
 
 async function resumeRun() {
-  try {
-    // 恢复前重新应用设置，以支持暂停期间的参数修改
-    await RunningService.SetSpeed(speed.value)
-    await RunningService.SetRandomization(speedVariance.value / 100, routeOffset.value)
+  if (!isPaused.value) return
+  const params = { ...paramsStore.params }
+  await runAction('resume', '恢复失败', async () => {
+    // 暂停期间只修改本地设置，恢复时统一应用。
+    await RunningService.SetSpeed(params.speed)
+    await RunningService.SetLoopCount(params.loopCount)
+    await RunningService.SetRandomization(params.speedVariance / 100, params.routeOffset)
     await RunningService.ResumeRun()
-    await updateStatus()
-  } catch (e) {
-    showErrorDialog(`恢复失败: ${e instanceof Error ? e.message : '未知错误'}`)
-  }
+  })
 }
 
 async function stopRun() {
-  try {
+  if (!isRunning.value && !isPaused.value) return
+  await runAction('stop', '停止失败', async () => {
     await RunningService.StopRun()
-    await updateStatus()
-  } catch (e) {
-    showErrorDialog(`停止失败: ${e instanceof Error ? e.message : '未知错误'}`)
-  }
+  })
 }
 
-async function updateStatus() {
-  const revision = ++statusRevision
-  try {
-    const data = await RunningService.GetStatus()
-    if (!disposed && revision === statusRevision) status.value = data
-  } catch (e) {
-    if (!disposed && revision === statusRevision) {
-      showErrorDialog(`获取状态失败: ${e instanceof Error ? e.message : '未知错误'}`)
+function updateStatus(reportError = false): Promise<void> {
+  if (disposed) return Promise.resolve()
+  // 初始同步、兜底轮询和错误事件共享同一在途请求。
+  if (statusRequest) return statusRequest
+  const revision = statusRevision
+  statusRequest = (async () => {
+    try {
+      const data = await RunningService.GetStatus()
+      if (!disposed && revision === statusRevision) {
+        status.value = data
+        lastStatusAt = Date.now()
+      }
+    } catch (e) {
+      // 后台兜底失败保持静默，避免反复弹出相同错误。
+      if (reportError && !disposed && revision === statusRevision) {
+        showErrorDialog(`获取状态失败: ${e instanceof Error ? e.message : '未知错误'}`)
+      }
     }
-  }
+  })().finally(() => {
+    statusRequest = null
+  })
+  return statusRequest
+}
+
+function onVisibilityChange() {
+  if (!document.hidden && !isOperating.value) void updateStatus()
+}
+
+async function syncStatusAfterPending(reportError = false) {
+  if (statusRequest) await statusRequest
+  if (!disposed) await updateStatus(reportError)
 }
 
 onMounted(() => {
-  updateStatus()
-
-  // 定期更新状态
-  statusInterval = setInterval(() => {
-    updateStatus()
-  }, 500)
-
-  // 监听位置更新事件
+  // 先订阅事件再拉取快照，通过 revision 丢弃晚到的旧查询。
   offPosition = Events.On('running:position', ev => {
     const data = ev.data
     applyStatus(data)
     emit('position-update', { lat: data.currentLat, lon: data.currentLon })
   })
 
-  // 监听完成事件
   offCompleted = Events.On('running:completed', ev => {
     applyStatus(ev.data)
     emit('completed')
@@ -403,41 +450,29 @@ onMounted(() => {
   })
 
   offError = Events.On('running:error', ev => {
-    updateStatus()
+    statusRevision++
+    void syncStatusAfterPending()
     showErrorDialog(`跑步任务失败: ${ev.data}`)
   })
+
+  void updateStatus(true)
+  statusInterval = setInterval(() => {
+    if (document.hidden || isOperating.value || Date.now() - lastStatusAt < STATUS_CHECK_INTERVAL_MS) return
+    void updateStatus()
+  }, STATUS_CHECK_INTERVAL_MS)
+  document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
 onUnmounted(() => {
   disposed = true
   statusRevision++
   if (statusInterval !== null) clearInterval(statusInterval)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
   offPosition?.()
   offCompleted?.()
   offError?.()
 })
 
-// 监听速度变化
-watch(speed, async newSpeed => {
-  if (isRunning.value) {
-    try {
-      await RunningService.SetSpeed(newSpeed)
-    } catch (e) {
-      showErrorDialog(`设置速度失败: ${e instanceof Error ? e.message : '未知错误'}`)
-    }
-  }
-})
-
-// 监听圈数变化
-watch(loopCount, async newLoopCount => {
-  if (!isRunning.value) {
-    try {
-      await RunningService.SetLoopCount(newLoopCount)
-    } catch (e) {
-      showErrorDialog(`设置圈数失败: ${e instanceof Error ? e.message : '未知错误'}`)
-    }
-  }
-})
 </script>
 
 <style scoped></style>

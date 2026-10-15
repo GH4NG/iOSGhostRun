@@ -112,8 +112,10 @@
             <div class="flex-1 min-h-0">
               <ScrollArea class="h-full">
                 <div class="flex flex-col gap-3 px-4 pb-4">
-                  <DevicePanel v-model="selectedUdid" />
-                  <RunningControl :udid="selectedUdid" :route-points="routePoints" @position-update="onPositionUpdate"
+                  <DevicePanel v-model="selectedUdid" :disabled="isRunning || isRunOperationPending"
+                    @busy-change="isDeviceBusy = $event" />
+                  <RunningControl :udid="selectedUdid" :route-points="routePoints" :disabled="isDeviceBusy"
+                    @busy-change="isRunOperationPending = $event" @position-update="onPositionUpdate"
                     @state-change="onRunStateChange" />
                 </div>
               </ScrollArea>
@@ -294,6 +296,8 @@ const selectedUdid = ref('')
 const routePoints = ref<RoutePoint[]>([])
 const currentPosition = ref<{ lat: number; lon: number } | null>(null)
 const isRunning = ref(false)
+const isDeviceBusy = ref(false)
+const isRunOperationPending = ref(false)
 const isLogCollapsed = ref(true)
 const showCloseDialog = ref(false)
 const isMacOS = ref(System.IsMac() || navigator.userAgent.includes('Mac OS X'))
