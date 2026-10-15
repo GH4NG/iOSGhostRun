@@ -5,6 +5,7 @@ bin
 frontend/bindings
 frontend/dist
 frontend/node_modules
+frontend/.env
 build/linux/appimage/build
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 *.syso

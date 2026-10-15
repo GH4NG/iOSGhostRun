@@ -9,13 +9,13 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@amap/amap-jsapi-loader": "^1.0.1",
         "@radix-icons/vue": "^1.0.0",
         "@tailwindcss/vite": "^4.3.3",
         "@vueuse/core": "^15.0.0",
         "@wailsio/runtime": "3.0.0-beta.27",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "ol": "^10.10.0",
         "pinia": "^4.0.3",
         "pinia-plugin-persistedstate": "^4.7.1",
         "reka-ui": "^2.10.5",

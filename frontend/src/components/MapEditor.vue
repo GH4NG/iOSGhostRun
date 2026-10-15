@@ -167,6 +167,12 @@
       </div>
     </div>
 
+    <div v-if="isMapLoading || mapLoadError" class="absolute inset-0 z-40 flex items-center justify-center bg-background/35 backdrop-blur-[1px] pointer-events-none">
+      <Card class="border-border/40 bg-card/90 px-4 py-3 text-sm text-muted-foreground shadow-xl">
+        {{ isMapLoading ? '正在加载高德地图…' : mapLoadError }}
+      </Card>
+    </div>
+
     <!-- 地图容器 -->
     <div ref="mapContainer" class="w-full h-full grayscale-[0.2] contrast-[1.1]"></div>
   </div>
@@ -174,6 +180,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, onUnmounted, nextTick } from 'vue'
+import { load as loadAMap } from '@amap/amap-jsapi-loader'
 import {
   MagnifyingGlassIcon,
   DrawingPinIcon,
@@ -185,18 +192,6 @@ import {
   Pencil1Icon,
   ResetIcon
 } from '@radix-icons/vue'
-import Map from 'ol/Map'
-import View from 'ol/View'
-import TileLayer from 'ol/layer/Tile'
-import VectorLayer from 'ol/layer/Vector'
-import VectorSource from 'ol/source/Vector'
-import XYZ from 'ol/source/XYZ'
-import { fromLonLat, toLonLat } from 'ol/proj'
-import Feature from 'ol/Feature'
-import Point from 'ol/geom/Point'
-import LineString from 'ol/geom/LineString'
-import { Style, Stroke, Circle, Fill } from 'ol/style'
-import 'ol/ol.css'
 import { type RoutePoint, calculateRouteDistance, formatDistance } from '../lib/routeUtils'
 import { useRoutesStore } from '../stores/routes'
 import { WGS84ToGCJ02, GCJ02ToWGS84 } from '../lib/transform'
@@ -208,6 +203,13 @@ import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
 import RouteManager from './RouteManager.vue'
+
+declare global {
+  interface Window {
+    AMap?: any
+    _AMapSecurityConfig?: { serviceHost: string }
+  }
+}
 
 const props = defineProps<{
   modelValue: RoutePoint[]
@@ -229,6 +231,13 @@ const isDrawingMode = ref(false)
 const isLayerSwitcherCollapsed = ref(true)
 const isSearchExpanded = ref(false)
 const isRouteCollapsed = ref(true)
+const isMapLoading = ref(false)
+const mapLoadError = ref('')
+
+const amapCredentials = {
+  key: import.meta.env.VITE_AMAP_JS_API_KEY?.trim() ?? '',
+  serviceHost: import.meta.env.VITE_AMAP_SERVICE_HOST?.trim() ?? ''
+}
 
 function onLocatingPoint(point: RoutePoint) {
   centerOnPosition(point.lat, point.lon)
@@ -260,10 +269,14 @@ const availableLayers = [
 
 const currentLayerId = ref('amap-vec')
 
-let map: Map | null = null
-let routeSource: VectorSource | null = null
-let positionSource: VectorSource | null = null
-let baseLayers: Record<string, TileLayer> = {}
+type AMapRuntime = any
+
+let map: AMapRuntime | null = null
+let mapClickHandler: ((event: AMapRuntime) => void) | null = null
+let baseLayers: Record<string, AMapRuntime> = {}
+let routeOverlays: AMapRuntime[] = []
+let positionOverlay: AMapRuntime | null = null
+let isUnmounted = false
 
 const routePoints = computed<RoutePoint[]>({
   get: () => props.modelValue,
@@ -283,172 +296,114 @@ const formattedDistance = computed(() => {
   return formatDistance(calculateRouteDistance(routePoints.value))
 })
 
-// 路线线条样式
-const routeStyle = new Style({
-  stroke: new Stroke({
-    color: '#10b981',
-    width: 5,
-    lineCap: 'round',
-    lineJoin: 'round'
-  })
-})
+interface AMapCredentials {
+  key: string
+  serviceHost: string
+}
 
-// 路线点样式
-const startPointStyle = new Style({
-  image: new Circle({
-    radius: 7,
-    fill: new Fill({ color: '#10b981' }),
-    stroke: new Stroke({ color: '#ffffff', width: 2.5 })
-  }),
-  zIndex: 10
-})
+function loadAmapApi(credentials: AMapCredentials): Promise<AMapRuntime> {
+  if (window.AMap) return Promise.resolve(window.AMap)
 
-const midPointStyle = new Style({
-  image: new Circle({
-    radius: 5,
-    fill: new Fill({ color: '#3b82f6' }),
-    stroke: new Stroke({ color: '#ffffff', width: 2 })
-  }),
-  zIndex: 5
-})
+  window._AMapSecurityConfig = { serviceHost: credentials.serviceHost }
+  return loadAMap({ key: credentials.key, version: '2.0' })
+}
 
-const endPointStyle = new Style({
-  image: new Circle({
-    radius: 7,
-    fill: new Fill({ color: '#ef4444' }),
-    stroke: new Stroke({ color: '#ffffff', width: 2.5 })
-  }),
-  zIndex: 10
-})
-
-// 当前位置样式 - 更显眼的设计，实时显示跑步位置
-const currentPositionStyle = new Style({
-  image: new Circle({
-    radius: 10,
-    fill: new Fill({ color: '#06b6d4' }),
-    stroke: new Stroke({ color: '#ffffff', width: 3 })
-  }),
-  zIndex: 100
-})
-
-function initBaseLayers() {
+function createBaseLayers(AMap: AMapRuntime) {
   baseLayers = {
-    'amap-vec': new TileLayer({
-      source: new XYZ({
-        url: 'http://wprd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&style=7&x={x}&y={y}&z={z}',
-        crossOrigin: 'anonymous'
-      }),
-      visible: true
-    }),
-    'amap-img': new TileLayer({
-      source: new XYZ({
-        url: 'https://webst0{1-4}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
-        crossOrigin: 'anonymous'
-      }),
-      visible: false
-    })
+    'amap-vec': AMap.createDefaultLayer({ visible: true }),
+    'amap-img': [
+      new AMap.TileLayer.Satellite({ visible: true, opacity: 1, zIndex: 3 }),
+      new AMap.TileLayer.RoadNet({ visible: true, opacity: 1, zIndex: 4 })
+    ]
   }
 }
 
 function switchLayer(id: string) {
+  if (!map || !baseLayers[id]) return
   currentLayerId.value = id
-  Object.keys(baseLayers).forEach(key => {
-    baseLayers[key].setVisible(key === id)
-  })
-  // 切换图层时重新显示路由，以应用正确的坐标转换
-  updateRouteDisplay()
+  map.setLayers(Array.isArray(baseLayers[id]) ? baseLayers[id] : [baseLayers[id]])
 }
 
-function toMapCoordinate(lat: number, lon: number) {
-  if (currentLayerId.value.startsWith('amap')) {
-    ;[lat, lon] = WGS84ToGCJ02(lat, lon)
-  }
-  return fromLonLat([lon, lat])
+function destroyMap() {
+  if (map && mapClickHandler) map.off('click', mapClickHandler)
+  mapClickHandler = null
+  map?.destroy()
+  map = null
+  routeOverlays = []
+  positionOverlay = null
 }
 
-onMounted(() => {
-  if (!mapContainer.value) return
+function toMapCoordinate(lat: number, lon: number): [number, number] {
+  const [gcjLat, gcjLon] = WGS84ToGCJ02(lat, lon)
+  return [gcjLon, gcjLat]
+}
 
-  initBaseLayers()
-  routeSource = new VectorSource()
-  positionSource = new VectorSource()
+async function initializeMap(credentials: AMapCredentials) {
+  if (!mapContainer.value || isUnmounted || isMapLoading.value) return
 
-  map = new Map({
-    target: mapContainer.value,
-    controls: [],
-    layers: [
-      ...Object.values(baseLayers),
-      new VectorLayer({
-        source: routeSource,
-        style: feature => {
-          if (feature.getGeometry()?.getType() === 'LineString') {
-            return routeStyle
-          }
-          return midPointStyle
-        }
-      }),
-      new VectorLayer({
-        source: positionSource,
-        style: currentPositionStyle
-      })
-    ],
-    view: new View({
-      center: fromLonLat([116.4, 39.9]),
+  isMapLoading.value = true
+  mapLoadError.value = ''
+  try {
+    const AMap = await loadAmapApi(credentials)
+    if (!mapContainer.value || isUnmounted) return
+
+    createBaseLayers(AMap)
+    map = new AMap.Map(mapContainer.value, {
+      center: toMapCoordinate(39.9, 116.4),
       zoom: 12,
-      maxZoom: 18
+      zooms: [2, 18],
+      viewMode: '2D',
+      resizeEnable: true,
+      showLabel: true,
+      layers: [baseLayers['amap-vec']]
     })
-  })
+    mapClickHandler = (event: AMapRuntime) => {
+      if (props.disabled || !isDrawingMode.value) return
 
-  map.on('click', evt => {
-    if (props.disabled || !isDrawingMode.value) return
-
-    let coords = toLonLat(evt.coordinate) // [lon, lat]
-
-    // 高德地图返回 GCJ-02，需要转换为 WGS84 保存
-    if (currentLayerId.value.startsWith('amap')) {
-      // 高德地图，将 GCJ-02 转换为 WGS84
-      // GCJ02ToWGS84 的参数顺序是 (lat, lon)
-      const [wgsLat, wgsLon] = GCJ02ToWGS84(coords[1], coords[0])
-      coords = [wgsLon, wgsLat]
+      const [lat, lon] = GCJ02ToWGS84(event.lnglat.getLat(), event.lnglat.getLng())
+      routePoints.value = [...routePoints.value, { lat, lon }]
     }
+    map.on('click', mapClickHandler)
 
-    const newPoint: RoutePoint = {
-      lat: coords[1],
-      lon: coords[0]
-    }
-
-    routePoints.value = [...routePoints.value, newPoint]
-  })
-
-  updateRouteDisplay()
-
-  nextTick(() => {
-    resizeTimer = window.setTimeout(() => {
-      map?.updateSize()
-    }, 200)
-  })
-
-  if (mapContainer.value && typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(entries => {
-      const r = entries[0].contentRect
-      if (r.width > 0 && r.height > 0 && map) {
-        map.updateSize()
-      }
-    })
-    resizeObserver.observe(mapContainer.value)
+    updateRouteDisplay()
+    updatePositionOverlay(props.currentPosition)
+    const initialPosition = props.currentPosition ?? props.modelValue[0]
+    if (initialPosition) map.setZoomAndCenter(16, toMapCoordinate(initialPosition.lat, initialPosition.lon))
+    await nextTick()
+    resizeTimer = window.setTimeout(() => map?.resize(), 200)
+  } catch (error) {
+    if (isUnmounted) return
+    destroyMap()
+    mapLoadError.value = error instanceof Error ? error.message : '高德地图加载失败，请检查配置后重试。'
+  } finally {
+    isMapLoading.value = false
   }
+}
+
+onMounted(async () => {
+  if (!mapContainer.value) return
+  if (!amapCredentials.key || !amapCredentials.serviceHost) {
+    mapLoadError.value = '高德地图配置不完整，请填写 frontend/.env 中的 JS API Key 和代理地址。'
+  } else {
+    await initializeMap(amapCredentials)
+  }
+
+  if (!mapContainer.value || typeof ResizeObserver === 'undefined') return
+
+  resizeObserver = new ResizeObserver(entries => {
+    const rect = entries[0]?.contentRect
+    if (rect && rect.width > 0 && rect.height > 0) map?.resize()
+  })
+  resizeObserver.observe(mapContainer.value)
 })
 
 onUnmounted(() => {
+  isUnmounted = true
   if (searchTimer !== null) clearTimeout(searchTimer)
   if (resizeTimer !== null) clearTimeout(resizeTimer)
   searchController?.abort()
   resizeObserver?.disconnect()
-  map?.setTarget(undefined)
-  map?.dispose()
-  map = null
-  routeSource = null
-  positionSource = null
+  destroyMap()
 })
 
 watch(
@@ -464,50 +419,68 @@ watch(
 watch(
   () => props.currentPosition,
   pos => {
-    if (!positionSource || !map) return
-    positionSource.clear()
-
-    if (pos) {
-      const feature = new Feature({
-        geometry: new Point(toMapCoordinate(pos.lat, pos.lon))
-      })
-      positionSource.addFeature(feature)
-    }
+    updatePositionOverlay(pos)
   },
   { immediate: true }
 )
 
 function updateRouteDisplay() {
-  if (!routeSource) return
-  routeSource.clear()
+  if (!map || !window.AMap) return
+  if (routeOverlays.length) map.remove(routeOverlays)
+  routeOverlays = []
 
   const points = props.modelValue
   if (points.length === 0) return
 
   const coords = points.map(p => toMapCoordinate(p.lat, p.lon))
-  points.forEach((_, index) => {
-    const feature = new Feature({
-      geometry: new Point(coords[index])
-    })
+  if (points.length >= 2) {
+    routeOverlays.push(new window.AMap.Polyline({
+      path: coords,
+      strokeColor: '#10b981',
+      strokeWeight: 5,
+      strokeOpacity: 1,
+      lineJoin: 'round',
+      lineCap: 'round',
+      zIndex: 50,
+      clickable: false
+    }))
+  }
 
-    // 根据索引设置不同样式
-    if (index === 0) {
-      feature.setStyle(startPointStyle)
-    } else if (index === points.length - 1) {
-      feature.setStyle(endPointStyle)
-    } else {
-      feature.setStyle(midPointStyle)
-    }
-
-    routeSource!.addFeature(feature)
+  points.forEach((point, index) => {
+    const isStart = index === 0
+    const isEnd = !isStart && index === points.length - 1
+    routeOverlays.push(new window.AMap.CircleMarker({
+      center: coords[index],
+      radius: isStart || isEnd ? 7 : 5,
+      fillColor: isStart ? '#10b981' : isEnd ? '#ef4444' : '#3b82f6',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: isStart || isEnd ? 2.5 : 2,
+      zIndex: 70 + index,
+      clickable: false
+    }))
   })
 
-  if (points.length >= 2) {
-    const lineFeature = new Feature({
-      geometry: new LineString(coords)
-    })
-    routeSource!.addFeature(lineFeature)
-  }
+  map.add(routeOverlays)
+}
+
+function updatePositionOverlay(position: { lat: number; lon: number } | null | undefined) {
+  if (!map || !window.AMap) return
+  if (positionOverlay) map.remove(positionOverlay)
+  positionOverlay = null
+  if (!position) return
+
+  positionOverlay = new window.AMap.CircleMarker({
+    center: toMapCoordinate(position.lat, position.lon),
+    radius: 10,
+    fillColor: '#06b6d4',
+    fillOpacity: 1,
+    strokeColor: '#ffffff',
+    strokeWeight: 3,
+    zIndex: 200,
+    clickable: false
+  })
+  map.add(positionOverlay)
 }
 
 async function searchLocation() {
@@ -537,11 +510,7 @@ function selectSearchResult(result: any) {
   const lon = parseFloat(result.lon)
 
   if (map) {
-    map.getView().animate({
-      center: toMapCoordinate(lat, lon),
-      zoom: 16,
-      duration: 500
-    })
+    map.setZoomAndCenter(16, toMapCoordinate(lat, lon), false, 500)
   }
 
   searchResults.value = []
@@ -550,18 +519,12 @@ function selectSearchResult(result: any) {
 
 const { fitToRoute, centerOnPosition } = {
   fitToRoute: () => {
-    if (!map || !routeSource || props.modelValue.length === 0) return
-    const extent = routeSource.getExtent()
-    if (!extent) return
-    map.getView().fit(extent, { padding: [50, 50, 50, 50], duration: 500 })
+    if (!map || routeOverlays.length === 0) return
+    map.setFitView(routeOverlays, false, [50, 50, 50, 50], 18)
   },
   centerOnPosition: (lat: number, lon: number) => {
     if (!map) return
-    map.getView().animate({
-      center: toMapCoordinate(lat, lon),
-      zoom: 16,
-      duration: 300
-    })
+    map.setZoomAndCenter(16, toMapCoordinate(lat, lon), false, 300)
   }
 }
 
