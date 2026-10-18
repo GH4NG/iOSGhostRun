@@ -339,7 +339,7 @@ const canStart = computed(
 )
 
 const selectionLocked = computed(
-    () => !statusConfirmed.value || isRunning.value || isPaused.value || isOperating.value
+    () => !statusConfirmed.value || status.value?.state !== 'idle' || isOperating.value
 )
 watch(selectionLocked, locked => emit('selection-lock-change', locked), {
     flush: 'sync',
@@ -363,6 +363,7 @@ const statusText = computed(() => {
     if (!statusConfirmed.value) return '同步中…'
     if (isRunning.value) return '运行中'
     if (isPaused.value) return '已暂停'
+    if (status.value?.state === 'manual') return '手动控制中'
     return '待机'
 })
 

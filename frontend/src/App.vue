@@ -117,11 +117,36 @@
                         <div class="flex-1 min-h-0">
                             <ScrollArea class="h-full">
                                 <div class="flex flex-col gap-3 px-4 pb-4">
-                                    <DevicePanel v-model="selectedUdid" :disabled="isSelectionLocked"
+                                    <DevicePanel v-model="selectedUdid" :disabled="isSelectionLocked || isManualActive"
                                         @busy-change="isDeviceBusy = $event" />
-                                    <RunningControl :udid="selectedUdid" :route-points="routePoints"
-                                        :disabled="isDeviceBusy" @selection-lock-change="isSelectionLocked = $event"
-                                        @position-update="onPositionUpdate" @state-change="onRunStateChange" />
+                                    <TabsRoot v-model="controlMode" class="min-w-0">
+                                        <TabsList aria-label="定位控制模式"
+                                            class="grid h-10 grid-cols-2 gap-1 rounded-xl border border-border/60 bg-secondary/30 p-1">
+                                            <TabsTrigger value="route" :disabled="isSelectionLocked || isManualActive"
+                                                class="flex items-center justify-center gap-2 rounded-lg text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                                                <ActivityLogIcon class="h-4 w-4" />跑步控制
+                                            </TabsTrigger>
+                                            <TabsTrigger value="manual" :disabled="isSelectionLocked || isManualActive"
+                                                class="flex items-center justify-center gap-2 rounded-lg text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                                                <Crosshair2Icon class="h-4 w-4" />手动控制
+                                            </TabsTrigger>
+                                        </TabsList>
+                                        <TabsContent value="route" force-mount :hidden="controlMode !== 'route'"
+                                            class="mt-3">
+                                            <RunningControl :udid="selectedUdid" :route-points="routePoints"
+                                                :disabled="isDeviceBusy || isManualActive"
+                                                @selection-lock-change="isSelectionLocked = $event"
+                                                @position-update="onPositionUpdate" @state-change="onRunStateChange" />
+                                        </TabsContent>
+                                        <TabsContent value="manual" force-mount :hidden="controlMode !== 'manual'"
+                                            class="mt-3">
+                                            <JoystickControl :udid="selectedUdid" :get-origin="getManualOrigin"
+                                                :visible="controlMode === 'manual' && !isSidebarCollapsed
+                                                    " :disabled="isDeviceBusy ||
+                                                        (isSelectionLocked && !isManualActive)
+                                                        " @active-change="isManualActive = $event" />
+                                        </TabsContent>
+                                    </TabsRoot>
                                 </div>
                             </ScrollArea>
                         </div>
@@ -133,7 +158,7 @@
                     <!-- 地图区域 -->
                     <div class="flex-1 relative min-h-0">
                         <MapEditor ref="mapEditor" v-model="editableRoutePoints" :current-position="currentPosition"
-                            :disabled="isSelectionLocked" />
+                            :disabled="isSelectionLocked || isManualActive" />
                     </div>
 
                     <!-- 日志区域 -->
@@ -309,8 +334,11 @@ import {
     SquareIcon,
     CopyIcon,
     Cross1Icon,
-    UpdateIcon
+    UpdateIcon,
+    ActivityLogIcon,
+    Crosshair2Icon
 } from '@radix-icons/vue'
+import { TabsRoot, TabsList, TabsTrigger, TabsContent } from 'reka-ui'
 import { Browser, Events, System, Window } from '@wailsio/runtime'
 import type { RunningState, UpdateInfo } from '../bindings/iOSGhostRun/services/models'
 import { CheckForUpdate, DownloadAndInstall } from '../bindings/iOSGhostRun/services/updateservice'
@@ -318,6 +346,7 @@ import MapEditor from './components/MapEditor.vue'
 import LogPanel from './components/LogPanel.vue'
 import DevicePanel from './components/DevicePanel.vue'
 import RunningControl from './components/RunningControl.vue'
+import JoystickControl from './components/JoystickControl.vue'
 import Notification from './components/Notification.vue'
 import { useRoutesStore, type RoutePoint } from './stores/routes'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -330,6 +359,12 @@ const selectedUdid = ref('')
 const routePoints = ref<RoutePoint[]>([])
 const currentPosition = ref<{ lat: number; lon: number } | null>(null)
 const isRunning = ref(false)
+const isManualActive = ref(false)
+const controlMode = ref('route')
+
+function getManualOrigin(): RoutePoint | null {
+    return mapEditor.value?.getManualOrigin() ?? null
+}
 const isDeviceBusy = ref(false)
 const isSelectionLocked = ref(true)
 const editableRoutePoints = computed({
@@ -374,7 +409,7 @@ function onLocatingPoint(point: RoutePoint) {
 }
 
 function onRunStateChange(state: RunningState) {
-    isRunning.value = state === 'running' || state === 'paused'
+    isRunning.value = state === 'running' || state === 'paused' || state === 'manual'
     if (!isRunning.value) {
         currentPosition.value = null
     }

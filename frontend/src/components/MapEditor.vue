@@ -237,6 +237,16 @@ const mapContainer = ref<HTMLDivElement | null>(null)
 const searchQuery = ref('')
 const searchResults = ref<any[]>([])
 const isDrawingMode = ref(false)
+const mapReady = ref(false)
+
+function getManualOrigin(): RoutePoint | null {
+    if (!mapReady.value || isMapLoading.value) return null
+    if (props.currentPosition) return { ...props.currentPosition }
+    const center = map?.getCenter()
+    if (!center) return null
+    const [lat, lon] = GCJ02ToWGS84(center.getLat(), center.getLng())
+    return { lat, lon }
+}
 const isLayerSwitcherCollapsed = ref(true)
 const isSearchExpanded = ref(false)
 const isRouteCollapsed = ref(true)
@@ -336,6 +346,7 @@ function switchLayer(id: string) {
 }
 
 function destroyMap() {
+    mapReady.value = false
     if (map && mapClickHandler) map.off('click', mapClickHandler)
     mapClickHandler = null
     map?.destroy()
@@ -375,6 +386,7 @@ async function initializeMap(credentials: AMapCredentials) {
             routePoints.value = [...routePoints.value, { lat, lon }]
         }
         map.on('click', mapClickHandler)
+        mapReady.value = true
 
         updateRouteDisplay()
         updatePositionOverlay(props.currentPosition)
@@ -545,9 +557,14 @@ const { fitToRoute, centerOnPosition } = {
     }
 }
 
+watch(() => props.disabled, disabled => {
+    if (disabled) isDrawingMode.value = false
+})
+
 defineExpose({
     fitToRoute,
-    centerOnPosition
+    centerOnPosition,
+    getManualOrigin
 })
 </script>
 

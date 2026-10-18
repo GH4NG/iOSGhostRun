@@ -23,6 +23,7 @@ const (
 	StateIdle    RunningState = "idle"
 	StateRunning RunningState = "running"
 	StatePaused  RunningState = "paused"
+	StateManual  RunningState = "manual"
 )
 
 // RunningStatus 跑步状态信息
@@ -47,6 +48,10 @@ type locationProvider interface {
 
 // RunningService 跑步模拟服务
 type RunningService struct {
+	manualEast      float64
+	manualNorth     float64
+	manualSpeed     float64
+	manualInputAt   time.Time
 	lifecycleMu     sync.Mutex
 	mu              sync.Mutex
 	runWG           sync.WaitGroup
@@ -161,6 +166,13 @@ func (r *RunningService) StartRun(udid string, route []Point, speed float64) err
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancel = cancel
 
+	r.startLocationTask(udid, cancel, func() { r.runLoop(ctx) }, nil)
+
+	return nil
+}
+
+// startLocationTask 统一路线与手动控制的连接释放、取消及等待路径。
+func (r *RunningService) startLocationTask(udid string, cancel context.CancelFunc, run func(), afterCleanup func()) {
 	r.runWG.Add(1)
 	go func() {
 		defer r.runWG.Done()
@@ -171,11 +183,12 @@ func (r *RunningService) StartRun(udid string, route []Point, speed float64) err
 					Log.Warn("RunningService", fmt.Sprintf("重置设备位置失败: %v", err))
 				}
 			}
+			if afterCleanup != nil {
+				afterCleanup()
+			}
 		}()
-		r.runLoop(ctx)
+		run()
 	}()
-
-	return nil
 }
 
 // PauseRun 暂停跑步
