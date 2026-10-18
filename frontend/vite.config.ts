@@ -16,21 +16,21 @@ export default defineConfig({
         host: '127.0.0.1'
     },
     build: {
-        rollupOptions: {
+        rolldownOptions: {
             output: {
-                manualChunks(id) {
-                    // 分离 OpenLayers
-                    if (id.includes('node_modules/ol')) {
-                        return 'openlayers'
-                    }
-                    // 分离 UI 组件
-                    if (id.includes('src/components/ui')) {
-                        return 'ui-components'
-                    }
-                    // 分离其他第三方库
-                    if (id.includes('node_modules')) {
-                        return 'vendor'
-                    }
+                codeSplitting: {
+                    groups: [
+                        {
+                            name: 'ui-components',
+                            test: /[/\\]src[/\\]components[/\\]ui[/\\]/,
+                            priority: 20
+                        },
+                        {
+                            name: 'vendor',
+                            test: /[/\\]node_modules[/\\]/,
+                            priority: 10
+                        }
+                    ]
                 }
             }
         }
