@@ -33,7 +33,14 @@ export function parseGPXRoute(xml: string): RoutePoint[] {
         const lat = latText ? Number(latText) : Number.NaN
         const lon = lonText ? Number(lonText) : Number.NaN
 
-        if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        if (
+            !Number.isFinite(lat) ||
+            !Number.isFinite(lon) ||
+            lat < -90 ||
+            lat > 90 ||
+            lon < -180 ||
+            lon > 180
+        ) {
             throw new Error(`GPX 第 ${index + 1} 个位置点的经纬度无效。`)
         }
 
@@ -63,7 +70,10 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
     const dLon = ((lon2 - lon1) * Math.PI) / 180
     const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2)
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
 }

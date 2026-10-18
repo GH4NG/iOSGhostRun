@@ -86,7 +86,12 @@ export function WGS84ToBD09(wgsLat: number, wgsLon: number): [number, number] {
 }
 
 // 通用坐标转换
-export function TransformCoordinate(lat: number, lon: number, from: CoordSystem, to: CoordSystem): [number, number] {
+export function TransformCoordinate(
+    lat: number,
+    lon: number,
+    from: CoordSystem,
+    to: CoordSystem
+): [number, number] {
     if (from === to) {
         return [lat, lon]
     }
@@ -122,13 +127,21 @@ export function TransformCoordinate(lat: number, lon: number, from: CoordSystem,
 }
 
 // 单点转换
-export function TransformCoordinatePoint(coord: Coordinate, from: CoordSystem, to: CoordSystem): Coordinate {
+export function TransformCoordinatePoint(
+    coord: Coordinate,
+    from: CoordSystem,
+    to: CoordSystem
+): Coordinate {
     const [lat, lon] = TransformCoordinate(coord.Latitude, coord.Longitude, from, to)
     return { Latitude: lat, Longitude: lon }
 }
 
 // 批量转换
-export function TransformCoordinates(coords: Coordinate[], from: CoordSystem, to: CoordSystem): Coordinate[] {
+export function TransformCoordinates(
+    coords: Coordinate[],
+    from: CoordSystem,
+    to: CoordSystem
+): Coordinate[] {
     return coords.map(c => TransformCoordinatePoint(c, from, to))
 }
 

@@ -1,11 +1,16 @@
 {
-  "semi": false,
-  "singleQuote": true,
-  "trailingComma": "none",
-  "tabWidth": 4,
-  "useTabs": false,
-  "printWidth": 120,
-  "bracketSpacing": true,
-  "arrowParens": "avoid",
-  "endOfLine": "lf"
+    "$schema": "https://json.schemastore.org/prettierrc",
+    "semi": false,
+    "singleQuote": true,
+    "printWidth": 100,
+    "trailingComma": "none",
+    "tabWidth": 4,
+    "useTabs": false,
+    "bracketSpacing": true,
+    "arrowParens": "avoid",
+    "endOfLine": "lf",
+    "quoteProps": "as-needed",
+    "jsxSingleQuote": false,
+    "bracketSameLine": false,
+    "singleAttributePerLine": false
 }

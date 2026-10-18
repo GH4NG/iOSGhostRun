@@ -1,207 +1,224 @@
 <template>
-  <Card class="flex flex-col gap-0 p-0 bg-card border-none shadow-none font-sans text-foreground">
-    <div class="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-border/40">
-      <div class="flex min-w-0 items-center gap-2">
-        <div class="shrink-0 p-1.5 rounded-lg bg-primary/10">
-          <PinFilledIcon class="w-5 h-5 text-primary" />
-        </div>
-        <span class="text-sm font-semibold tracking-tight text-foreground/80">当前路线</span>
-      </div>
-      <div class="flex shrink-0 items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="新建路线"
-              class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
-              :disabled="props.disabled" @click="executeClearRoute">
-              <PlusIcon class="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">新建路线</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="导入路线"
-              class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
-              :disabled="props.disabled" @click="showImport = !showImport">
-              <DownloadIcon class="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">导入路线</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="导出当前路线"
-              class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
-              :disabled="routePoints.length === 0" @click="exportRoute(routePoints)">
-              <UploadIcon class="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">导出当前路线到剪贴板</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="清空当前路线"
-              class="w-8 h-8 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
-              :disabled="props.disabled || routePoints.length === 0" @click="executeClearRoute">
-              <TrashIcon class="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">清空当前路线</TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
-
-    <div class="p-3 min-w-0 flex flex-col gap-3">
-      <p v-if="props.disabled" role="status" class="rounded-lg bg-primary/10 p-3 text-xs leading-5 text-muted-foreground">
-        任务结束后可编辑。
-      </p>
-      <!-- 导入路线区域 -->
-      <div v-if="showImport && !props.disabled"
-        class="flex flex-col gap-3 p-4 bg-secondary/10 rounded-xl border border-border/40 animate-in fade-in slide-in-from-top-2">
-        <div>
-          <div class="text-xs font-medium text-muted-foreground mb-2">
-            来源坐标系 <span class="font-normal">（标准 GPX 使用 WGS84）</span>
-          </div>
-          <div class="relative">
-            <Button variant="outline" size="sm"
-              class="h-8 text-xs font-medium w-full justify-between bg-background border-border/40"
-              @click="showCoordSystemMenu = !showCoordSystemMenu">
-              <span class="text-xs font-medium">
-                {{ coordSystemLabel }}
-              </span>
-              <span>▼</span>
-            </Button>
-            <div v-if="showCoordSystemMenu"
-              class="absolute top-full left-0 right-0 mt-1 bg-background border border-border/40 rounded-lg shadow-lg z-50">
-              <button @click="selectCoordSystem('wgs84')"
-                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors">
-                WGS84(GPS标准)
-              </button>
-              <button @click="selectCoordSystem('gcj02')"
-                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors">
-                GCJ-02(高德/腾讯)
-              </button>
-              <button @click="selectCoordSystem('bd09')"
-                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors last:rounded-b-lg">
-                BD09(百度)
-              </button>
+    <Card class="flex flex-col gap-0 p-0 bg-card border-none shadow-none font-sans text-foreground">
+        <div class="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-border/40">
+            <div class="flex min-w-0 items-center gap-2">
+                <div class="shrink-0 p-1.5 rounded-lg bg-primary/10">
+                    <PinFilledIcon class="w-5 h-5 text-primary" />
+                </div>
+                <span class="text-sm font-semibold tracking-tight text-foreground/80">当前路线</span>
             </div>
-          </div>
-        </div>
-        <div>
-          <div class="text-xs font-medium text-muted-foreground mb-2">
-            导入路线数据 (JSON / GPX)
-          </div>
-          <input ref="gpxFileInput" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml"
-            class="hidden" @change="handleGPXFileChange" />
-          <Button variant="outline" size="sm" class="h-8 mb-2 text-xs font-medium bg-background border-border/40"
-            @click="gpxFileInput?.click()">选择 GPX 文件</Button>
-          <textarea v-model="importText" placeholder='粘贴 JSON 坐标数组或 GPX XML 内容'
-            class="w-full min-w-0 min-h-[100px] p-3 text-xs font-mono bg-background border border-border/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 resize-y"></textarea>
-        </div>
-        <div class="flex gap-2 mt-2">
-          <Button size="sm" class="flex-1 h-8 text-xs font-semibold" @click="handleImport">确认导入</Button>
-          <Button size="sm" variant="ghost" class="h-8 text-xs font-semibold" @click="showImport = false">取消</Button>
-        </div>
-      </div>
+            <div class="flex shrink-0 items-center gap-1">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="新建路线"
+                            class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
+                            :disabled="props.disabled" @click="executeClearRoute">
+                            <PlusIcon class="w-4 h-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">新建路线</TooltipContent>
+                </Tooltip>
 
-      <!-- 保存路线 -->
-      <div class="flex gap-2">
-        <Input v-model="newRouteName" :disabled="props.disabled" type="text" placeholder="给这条线路起个名字..."
-          class="min-w-0 h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all font-sans text-sm font-medium"
-          @keydown.enter="saveCurrentRoute" />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon"
-              class="h-10 w-10 shrink-0 shadow-lg shadow-primary/20 transition-all active:opacity-90"
-              :disabled="!canSave" @click="saveCurrentRoute">
-              <PlusIcon class="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>保存至本地数据库</TooltipContent>
-        </Tooltip>
-      </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="导入路线"
+                            class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
+                            :disabled="props.disabled" @click="showImport = !showImport">
+                            <DownloadIcon class="w-4 h-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">导入路线</TooltipContent>
+                </Tooltip>
 
-      <!-- 已保存路线列表 -->
-      <div class="flex flex-col gap-4">
-        <div class="flex items-center justify-between px-1">
-          <span class="text-xs font-medium text-muted-foreground">已保存列表</span>
-          <Badge variant="outline"
-            class="text-[11px] h-5 font-semibold bg-secondary/10 text-muted-foreground border-none">{{ savedRoutes.length
-            }}</Badge>
-        </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="导出当前路线"
+                            class="w-8 h-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
+                            :disabled="routePoints.length === 0" @click="exportRoute(routePoints)">
+                            <UploadIcon class="w-4 h-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">导出当前路线到剪贴板</TooltipContent>
+                </Tooltip>
 
-        <div v-if="savedRoutes.length === 0"
-          class="flex flex-col items-center justify-center py-10 border border-dashed border-border/30 rounded-2xl bg-secondary/5 text-center px-4">
-          <PinFilledIcon class="w-8 h-8 text-muted-foreground/20 mb-3" />
-          <span class="text-xs leading-relaxed text-muted-foreground font-medium">还没有保存的路线</span>
-        </div>
-
-        <div v-else class="flex flex-col gap-2">
-          <div v-for="route in savedRoutes" :key="route.name" :aria-current="activeRouteName === route.name ? 'true' : undefined"
-            role="button" :tabindex="props.disabled ? -1 : 0" :aria-disabled="props.disabled"
-            @keydown.enter.self="loadRouteByName(route.name)" @keydown.space.self.prevent="loadRouteByName(route.name)"
-            class="flex items-center gap-2 p-3 rounded-lg border transition-all duration-300 cursor-pointer aria-disabled:cursor-default group hover:shadow-lg hover:shadow-black/5"
-            :class="activeRouteName === route.name
-              ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
-              : 'border-transparent bg-secondary/20 hover:border-primary/30 hover:bg-primary/5'"
-            @click="loadRouteByName(route.name)">
-            <div
-              class="w-10 h-10 shrink-0 rounded-lg bg-background flex items-center justify-center border border-border/50 group-hover:border-primary/20 transition-colors">
-              <RocketIcon class="w-5 h-5 group-hover:text-primary/80 transition-colors"
-                :class="activeRouteName === route.name ? 'text-primary' : 'text-primary/40'" />
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="清空当前路线"
+                            class="w-8 h-8 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
+                            :disabled="props.disabled || routePoints.length === 0" @click="executeClearRoute">
+                            <TrashIcon class="w-4 h-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">清空当前路线</TooltipContent>
+                </Tooltip>
             </div>
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold truncate group-hover:text-primary transition-colors tracking-tight">
-                {{ route.name }}
-              </div>
-              <div class="text-xs font-normal text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
-                <span v-if="activeRouteName === route.name" class="text-primary">当前</span>
-                <span>{{ route.points.length }} <span class="font-medium">PTS</span></span>
-                <span class="w-1 h-1 rounded-full bg-border"></span>
-                <span>{{ formatDist(calculateDist(route.points)) }}</span>
-              </div>
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" :aria-label="`导出路线 ${route.name}`"
-                  class="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all"
-                  @click.stop="exportRoute(route.points, route.name)">
-                  <UploadIcon class="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>导出路线到剪贴板</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon"
-                  :aria-label="`删除路线 ${route.name}`" :disabled="props.disabled"
-                  class="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all opacity-100"
-                  @click.stop="deleteRouteByName(route.name)">
-                  <TrashIcon class="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>删除路线</TooltipContent>
-            </Tooltip>
-          </div>
         </div>
-      </div>
-    </div>
-  </Card>
+
+        <div class="p-3 min-w-0 flex flex-col gap-3">
+            <p v-if="props.disabled" role="status"
+                class="rounded-lg bg-primary/10 p-3 text-xs leading-5 text-muted-foreground">
+                任务结束后可编辑。
+            </p>
+            <!-- 导入路线区域 -->
+            <div v-if="showImport && !props.disabled"
+                class="flex flex-col gap-3 p-4 bg-secondary/10 rounded-xl border border-border/40 animate-in fade-in slide-in-from-top-2">
+                <div>
+                    <div class="text-xs font-medium text-muted-foreground mb-2">
+                        来源坐标系 <span class="font-normal">（标准 GPX 使用 WGS84）</span>
+                    </div>
+                    <div class="relative">
+                        <Button variant="outline" size="sm"
+                            class="h-8 text-xs font-medium w-full justify-between bg-background border-border/40"
+                            @click="showCoordSystemMenu = !showCoordSystemMenu">
+                            <span class="text-xs font-medium">
+                                {{ coordSystemLabel }}
+                            </span>
+                            <span>▼</span>
+                        </Button>
+                        <div v-if="showCoordSystemMenu"
+                            class="absolute top-full left-0 right-0 mt-1 bg-background border border-border/40 rounded-lg shadow-lg z-50">
+                            <button @click="selectCoordSystem('wgs84')"
+                                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors">
+                                WGS84(GPS标准)
+                            </button>
+                            <button @click="selectCoordSystem('gcj02')"
+                                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors">
+                                GCJ-02(高德/腾讯)
+                            </button>
+                            <button @click="selectCoordSystem('bd09')"
+                                class="w-full px-3 py-2 text-left text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors last:rounded-b-lg">
+                                BD09(百度)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs font-medium text-muted-foreground mb-2">
+                        导入路线数据 (JSON / GPX)
+                    </div>
+                    <input ref="gpxFileInput" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml"
+                        class="hidden" @change="handleGPXFileChange" />
+                    <Button variant="outline" size="sm"
+                        class="h-8 mb-2 text-xs font-medium bg-background border-border/40"
+                        @click="gpxFileInput?.click()">选择 GPX 文件</Button>
+                    <textarea v-model="importText" placeholder="粘贴 JSON 坐标数组或 GPX XML 内容"
+                        class="w-full min-w-0 min-h-[100px] p-3 text-xs font-mono bg-background border border-border/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 resize-y"></textarea>
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <Button size="sm" class="flex-1 h-8 text-xs font-semibold" @click="handleImport">确认导入</Button>
+                    <Button size="sm" variant="ghost" class="h-8 text-xs font-semibold"
+                        @click="showImport = false">取消</Button>
+                </div>
+            </div>
+
+            <!-- 保存路线 -->
+            <div class="flex gap-2">
+                <Input v-model="newRouteName" :disabled="props.disabled" type="text" placeholder="给这条线路起个名字..."
+                    class="min-w-0 h-10 bg-secondary/20 border-border/40 focus:border-primary/40 focus:ring-primary/20 transition-all font-sans text-sm font-medium"
+                    @keydown.enter="saveCurrentRoute" />
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button size="icon"
+                            class="h-10 w-10 shrink-0 shadow-lg shadow-primary/20 transition-all active:opacity-90"
+                            :disabled="!canSave" @click="saveCurrentRoute">
+                            <PlusIcon class="w-4 h-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>保存至本地数据库</TooltipContent>
+                </Tooltip>
+            </div>
+
+            <!-- 已保存路线列表 -->
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-xs font-medium text-muted-foreground">已保存列表</span>
+                    <Badge variant="outline"
+                        class="text-[11px] h-5 font-semibold bg-secondary/10 text-muted-foreground border-none">{{
+                            savedRoutes.length }}</Badge>
+                </div>
+
+                <div v-if="savedRoutes.length === 0"
+                    class="flex flex-col items-center justify-center py-10 border border-dashed border-border/30 rounded-2xl bg-secondary/5 text-center px-4">
+                    <PinFilledIcon class="w-8 h-8 text-muted-foreground/20 mb-3" />
+                    <span class="text-xs leading-relaxed text-muted-foreground font-medium">还没有保存的路线</span>
+                </div>
+
+                <div v-else class="flex flex-col gap-2">
+                    <div v-for="route in savedRoutes" :key="route.name"
+                        :aria-current="activeRouteName === route.name ? 'true' : undefined" role="button"
+                        :tabindex="props.disabled ? -1 : 0" :aria-disabled="props.disabled"
+                        @keydown.enter.self="loadRouteByName(route.name)"
+                        @keydown.space.self.prevent="loadRouteByName(route.name)"
+                        class="flex items-center gap-2 p-3 rounded-lg border transition-all duration-300 cursor-pointer aria-disabled:cursor-default group hover:shadow-lg hover:shadow-black/5"
+                        :class="activeRouteName === route.name
+                            ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
+                            : 'border-transparent bg-secondary/20 hover:border-primary/30 hover:bg-primary/5'
+                            " @click="loadRouteByName(route.name)">
+                        <div
+                            class="w-10 h-10 shrink-0 rounded-lg bg-background flex items-center justify-center border border-border/50 group-hover:border-primary/20 transition-colors">
+                            <RocketIcon class="w-5 h-5 group-hover:text-primary/80 transition-colors" :class="activeRouteName === route.name
+                                ? 'text-primary'
+                                : 'text-primary/40'
+                                " />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div
+                                class="text-sm font-semibold truncate group-hover:text-primary transition-colors tracking-tight">
+                                {{ route.name }}
+                            </div>
+                            <div
+                                class="text-xs font-normal text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
+                                <span v-if="activeRouteName === route.name" class="text-primary">当前</span>
+                                <span>{{ route.points.length }}
+                                    <span class="font-medium">PTS</span></span>
+                                <span class="w-1 h-1 rounded-full bg-border"></span>
+                                <span>{{ formatDist(calculateDist(route.points)) }}</span>
+                            </div>
+                        </div>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" :aria-label="`导出路线 ${route.name}`"
+                                    class="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all"
+                                    @click.stop="exportRoute(route.points, route.name)">
+                                    <UploadIcon class="w-4 h-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>导出路线到剪贴板</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" :aria-label="`删除路线 ${route.name}`"
+                                    :disabled="props.disabled"
+                                    class="w-8 h-8 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all opacity-100"
+                                    @click.stop="deleteRouteByName(route.name)">
+                                    <TrashIcon class="w-4 h-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>删除路线</TooltipContent>
+                        </Tooltip>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Card>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { DrawingPinFilledIcon as PinFilledIcon, TrashIcon, PlusIcon, RocketIcon, DownloadIcon, UploadIcon } from '@radix-icons/vue'
+import {
+    DrawingPinFilledIcon as PinFilledIcon,
+    TrashIcon,
+    PlusIcon,
+    RocketIcon,
+    DownloadIcon,
+    UploadIcon
+} from '@radix-icons/vue'
 import { Clipboard } from '@wailsio/runtime'
 import {
-  calculateRouteDistance,
-  formatDistance,
-  parseGPXRoute,
-  type RoutePoint
+    calculateRouteDistance,
+    formatDistance,
+    parseGPXRoute,
+    type RoutePoint
 } from '../lib/routeUtils'
 import { useRoutesStore, type SavedRoute } from '../stores/routes'
 import { GCJ02ToWGS84, WGS84ToGCJ02, BD09ToWGS84 } from '../lib/transform'
@@ -216,14 +233,14 @@ const { showError: showErrorDialog, showSuccess } = useNotification()
 const routesStore = useRoutesStore()
 
 const props = defineProps<{
-  modelValue: RoutePoint[]
-  currentLayerId?: string
-  disabled?: boolean
+    modelValue: RoutePoint[]
+    currentLayerId?: string
+    disabled?: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [points: RoutePoint[]]
-  'locating-point': [point: RoutePoint]
+    'update:modelValue': [points: RoutePoint[]]
+    'locating-point': [point: RoutePoint]
 }>()
 
 let importRevision = 0
@@ -235,15 +252,22 @@ const selectedRouteName = ref<string | null>(null)
 const routePoints = computed(() => props.modelValue)
 
 const activeRouteName = computed(() => {
-  const matches = (route: SavedRoute) => route.points.length === routePoints.value.length &&
-    route.points.every((point, index) =>
-      point.lat === routePoints.value[index].lat && point.lon === routePoints.value[index].lon)
+    const matches = (route: SavedRoute) =>
+        route.points.length === routePoints.value.length &&
+        route.points.every(
+            (point, index) =>
+                point.lat === routePoints.value[index].lat &&
+                point.lon === routePoints.value[index].lon
+        )
 
-  if (routePoints.value.length === 0) return null
-  const selected = savedRoutes.value.find(route => route.name === selectedRouteName.value)
-  if (selected && matches(selected)) return selected.name
-  return savedRoutes.value.find(route => route.name !== 'last_route' && matches(route))?.name ??
-    savedRoutes.value.find(route => route.name === 'last_route' && matches(route))?.name ?? null
+    if (routePoints.value.length === 0) return null
+    const selected = savedRoutes.value.find(route => route.name === selectedRouteName.value)
+    if (selected && matches(selected)) return selected.name
+    return (
+        savedRoutes.value.find(route => route.name !== 'last_route' && matches(route))?.name ??
+        savedRoutes.value.find(route => route.name === 'last_route' && matches(route))?.name ??
+        null
+    )
 })
 
 const showImport = ref(false)
@@ -253,203 +277,215 @@ const showCoordSystemMenu = ref(false)
 const gpxFileInput = ref<HTMLInputElement | null>(null)
 
 const canSave = computed(() => {
-  return !props.disabled && newRouteName.value.trim() && routePoints.value.length >= 2
+    return !props.disabled && newRouteName.value.trim() && routePoints.value.length >= 2
 })
 
 const coordSystemLabel = computed(() => {
-  const labels: Record<string, string> = {
-    wgs84: 'WGS84',
-    gcj02: 'GCJ-02',
-    bd09: 'BD09'
-  }
-  return labels[importCoordSystem.value]
+    const labels: Record<string, string> = {
+        wgs84: 'WGS84',
+        gcj02: 'GCJ-02',
+        bd09: 'BD09'
+    }
+    return labels[importCoordSystem.value]
 })
 
 function selectCoordSystem(system: 'wgs84' | 'gcj02' | 'bd09') {
-  importCoordSystem.value = system
-  showCoordSystemMenu.value = false
+    importCoordSystem.value = system
+    showCoordSystemMenu.value = false
 }
 
 function refreshRoutes() {
-  savedRoutes.value = routesStore.listRoutes()
+    savedRoutes.value = routesStore.listRoutes()
 }
 
 function saveCurrentRoute() {
-  if (!canSave.value) return
+    if (!canSave.value) return
 
-  const name = newRouteName.value.trim()
-  routesStore.saveRoute(name, routePoints.value)
-  selectedRouteName.value = name
-  showSuccess(`路线 "${name}" 已保存`)
-  newRouteName.value = ''
-  refreshRoutes()
+    const name = newRouteName.value.trim()
+    routesStore.saveRoute(name, routePoints.value)
+    selectedRouteName.value = name
+    showSuccess(`路线 "${name}" 已保存`)
+    newRouteName.value = ''
+    refreshRoutes()
 }
 
 function loadRouteByName(name: string) {
-  if (disposed || props.disabled) return
-  const points = routesStore.loadRoute(name)
-  if (points && points.length > 0) {
-    selectedRouteName.value = name
-    emit('update:modelValue', points)
-    emit('locating-point', points[0])
-    showSuccess(`已加载路线 "${name}"，包含 ${points.length} 个位置点`)
-  }
+    if (disposed || props.disabled) return
+    const points = routesStore.loadRoute(name)
+    if (points && points.length > 0) {
+        selectedRouteName.value = name
+        emit('update:modelValue', points)
+        emit('locating-point', points[0])
+        showSuccess(`已加载路线 "${name}"，包含 ${points.length} 个位置点`)
+    }
 }
 
 function deleteRouteByName(name: string) {
-  if (disposed || props.disabled) return
-  routesStore.deleteRoute(name)
-  if (selectedRouteName.value === name) selectedRouteName.value = null
-  showSuccess(`路线 "${name}" 已删除`)
-  refreshRoutes()
+    if (disposed || props.disabled) return
+    routesStore.deleteRoute(name)
+    if (selectedRouteName.value === name) selectedRouteName.value = null
+    showSuccess(`路线 "${name}" 已删除`)
+    refreshRoutes()
 }
 
 async function exportRoute(points: RoutePoint[], name?: string) {
-  try {
-    await Clipboard.SetText(JSON.stringify(points, null, 2))
-    showSuccess(name ? `路线 "${name}" 已导出到剪贴板` : '当前路线已导出到剪贴板')
-  } catch (error) {
-    showErrorDialog(`导出路线失败：${error instanceof Error ? error.message : String(error)}`)
-  }
+    try {
+        await Clipboard.SetText(JSON.stringify(points, null, 2))
+        showSuccess(name ? `路线 "${name}" 已导出到剪贴板` : '当前路线已导出到剪贴板')
+    } catch (error) {
+        showErrorDialog(`导出路线失败：${error instanceof Error ? error.message : String(error)}`)
+    }
 }
 
 function executeClearRoute() {
-  if (disposed || props.disabled) return
-  if (routePoints.value.length > 0) {
-    emit('update:modelValue', [])
-    showSuccess('已清空当前路线')
-  } else {
-    showSuccess('准备就绪，可以开始绘制新路线')
-  }
+    if (disposed || props.disabled) return
+    if (routePoints.value.length > 0) {
+        emit('update:modelValue', [])
+        showSuccess('已清空当前路线')
+    } else {
+        showSuccess('准备就绪，可以开始绘制新路线')
+    }
 }
 
 // 导入路线数据
 function handleImport() {
-  if (disposed || props.disabled) return
-  importRevision++
-  const text = importText.value.trim()
-  if (!text) return
+    if (disposed || props.disabled) return
+    importRevision++
+    const text = importText.value.trim()
+    if (!text) return
 
-  try {
-    let points: RoutePoint[] = []
+    try {
+        let points: RoutePoint[] = []
 
-    if (/<(?:[\w.-]+:)?gpx(?:\s|>)/i.test(text)) {
-      points = convertGPXPointsToWGS84(parseGPXRoute(text))
-    } else {
-      const coordSystem = importCoordSystem.value
+        if (/<(?:[\w.-]+:)?gpx(?:\s|>)/i.test(text)) {
+            points = convertGPXPointsToWGS84(parseGPXRoute(text))
+        } else {
+            const coordSystem = importCoordSystem.value
 
-      const matches = text.match(/\{"lng":"[^"]+","lat":"[^"]+"\}/g)
-      if (matches && matches.length > 0) {
-        points = matches.map(m => {
-          const p = JSON.parse(m)
-          let lat = parseFloat(p.lat)
-          let lon = parseFloat(p.lng)
+            const matches = text.match(/\{"lng":"[^"]+","lat":"[^"]+"\}/g)
+            if (matches && matches.length > 0) {
+                points = matches.map(m => {
+                    const p = JSON.parse(m)
+                    let lat = parseFloat(p.lat)
+                    let lon = parseFloat(p.lng)
 
-          // 根据导入坐标系进行转换
-          if (coordSystem === 'gcj02') {
-            ;[lat, lon] = GCJ02ToWGS84(lat, lon)
-          } else if (coordSystem === 'bd09') {
-            ;[lat, lon] = BD09ToWGS84(lat, lon)
-          }
-          return { lat, lon }
-        })
-      } else {
-        try {
-          const parsed = JSON.parse(text)
-          if (Array.isArray(parsed)) {
-            points = parsed.map(p => {
-              let lat = parseFloat(p.lat)
-              let lon = parseFloat(p.lng ?? p.lon)
+                    // 根据导入坐标系进行转换
+                    if (coordSystem === 'gcj02') {
+                        ;[lat, lon] = GCJ02ToWGS84(lat, lon)
+                    } else if (coordSystem === 'bd09') {
+                        ;[lat, lon] = BD09ToWGS84(lat, lon)
+                    }
+                    return { lat, lon }
+                })
+            } else {
+                try {
+                    const parsed = JSON.parse(text)
+                    if (Array.isArray(parsed)) {
+                        points = parsed.map(p => {
+                            let lat = parseFloat(p.lat)
+                            let lon = parseFloat(p.lng ?? p.lon)
 
-              // 根据导入坐标系进行转换
-              if (coordSystem === 'gcj02') {
-                ;[lat, lon] = GCJ02ToWGS84(lat, lon)
-              } else if (coordSystem === 'bd09') {
-                ;[lat, lon] = BD09ToWGS84(lat, lon)
-              }
-              return { lat, lon }
-            })
-          }
-        } catch (e) {
-          // Continue
+                            // 根据导入坐标系进行转换
+                            if (coordSystem === 'gcj02') {
+                                ;[lat, lon] = GCJ02ToWGS84(lat, lon)
+                            } else if (coordSystem === 'bd09') {
+                                ;[lat, lon] = BD09ToWGS84(lat, lon)
+                            }
+                            return { lat, lon }
+                        })
+                    }
+                } catch (e) {
+                    // Continue
+                }
+            }
         }
-      }
-    }
 
-    if (points.length > 0) {
-      importText.value = ''
-      commitImportedRoute(points)
-    } else {
-      showErrorDialog('无法识别路线数据格式，请确保格式正确。')
+        if (points.length > 0) {
+            importText.value = ''
+            commitImportedRoute(points)
+        } else {
+            showErrorDialog('无法识别路线数据格式，请确保格式正确。')
+        }
+    } catch (e) {
+        showErrorDialog(`操作失败: ${e instanceof Error ? e.message : '未知错误'}`)
     }
-  } catch (e) {
-    showErrorDialog(`操作失败: ${e instanceof Error ? e.message : '未知错误'}`)
-  }
 }
 
 async function handleGPXFileChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file || disposed || props.disabled) {
-    input.value = ''
-    return
-  }
-  const revision = ++importRevision
-  try {
-    const text = await file.text()
-    if (disposed || props.disabled || revision !== importRevision) return
-    const points = convertGPXPointsToWGS84(parseGPXRoute(text))
-    commitImportedRoute(points)
-  } catch (e) {
-    if (disposed || props.disabled || revision !== importRevision) return
-    showErrorDialog(`导入 GPX 文件失败：${e instanceof Error ? e.message : '未知错误'}`)
-  } finally {
-    input.value = ''
-  }
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file || disposed || props.disabled) {
+        input.value = ''
+        return
+    }
+    const revision = ++importRevision
+    try {
+        const text = await file.text()
+        if (disposed || props.disabled || revision !== importRevision) return
+        const points = convertGPXPointsToWGS84(parseGPXRoute(text))
+        commitImportedRoute(points)
+    } catch (e) {
+        if (disposed || props.disabled || revision !== importRevision) return
+        showErrorDialog(`导入 GPX 文件失败：${e instanceof Error ? e.message : '未知错误'}`)
+    } finally {
+        input.value = ''
+    }
 }
 
 function convertGPXPointsToWGS84(points: RoutePoint[]): RoutePoint[] {
-  if (importCoordSystem.value === 'wgs84') return points
+    if (importCoordSystem.value === 'wgs84') return points
 
-  return points.map(({ lat, lon }) => {
-    const [convertedLat, convertedLon] = importCoordSystem.value === 'gcj02'
-      ? GCJ02ToWGS84(lat, lon)
-      : BD09ToWGS84(lat, lon)
-    return { lat: convertedLat, lon: convertedLon }
-  })
+    return points.map(({ lat, lon }) => {
+        const [convertedLat, convertedLon] =
+            importCoordSystem.value === 'gcj02' ? GCJ02ToWGS84(lat, lon) : BD09ToWGS84(lat, lon)
+        return { lat: convertedLat, lon: convertedLon }
+    })
 }
 
 function commitImportedRoute(points: RoutePoint[]) {
-  if (disposed || props.disabled) return
-  if (points.some(p => !Number.isFinite(p.lat) || !Number.isFinite(p.lon) ||
-    p.lat < -90 || p.lat > 90 || p.lon < -180 || p.lon > 180)) {
-    throw new Error('路线包含无效经纬度，请检查数据格式和坐标范围。')
-  }
+    if (disposed || props.disabled) return
+    if (
+        points.some(
+            p =>
+                !Number.isFinite(p.lat) ||
+                !Number.isFinite(p.lon) ||
+                p.lat < -90 ||
+                p.lat > 90 ||
+                p.lon < -180 ||
+                p.lon > 180
+        )
+    ) {
+        throw new Error('路线包含无效经纬度，请检查数据格式和坐标范围。')
+    }
 
-  emit('update:modelValue', points)
-  emit('locating-point', points[0])
-  showImport.value = false
-  showSuccess(`已导入路线，包含 ${points.length} 个位置点`)
+    emit('update:modelValue', points)
+    emit('locating-point', points[0])
+    showImport.value = false
+    showSuccess(`已导入路线，包含 ${points.length} 个位置点`)
 }
 
 function calculateDist(points: RoutePoint[]) {
-  return calculateRouteDistance(points)
+    return calculateRouteDistance(points)
 }
 
 function formatDist(km: number) {
-  return formatDistance(km)
+    return formatDistance(km)
 }
 
-watch(() => props.disabled, disabled => {
-    if (disabled) {
-        importRevision++
-        showImport.value = false
-        showCoordSystemMenu.value = false
-    }
-}, { flush: 'sync' })
+watch(
+    () => props.disabled,
+    disabled => {
+        if (disabled) {
+            importRevision++
+            showImport.value = false
+            showCoordSystemMenu.value = false
+        }
+    },
+    { flush: 'sync' }
+)
 
 onMounted(() => {
-  refreshRoutes()
+    refreshRoutes()
 })
 
 onUnmounted(() => {
@@ -460,11 +496,11 @@ onUnmounted(() => {
 
 <style scoped>
 .no-scrollbar::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 .no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 </style>

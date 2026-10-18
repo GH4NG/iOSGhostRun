@@ -1,5 +1,6 @@
 <template>
-    <div class="fixed top-14 left-1/2 -translate-x-1/2 z-[9999] w-max max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto flex flex-col gap-2 pointer-events-none">
+    <div
+        class="fixed top-14 left-1/2 -translate-x-1/2 z-[9999] w-max max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto flex flex-col gap-2 pointer-events-none">
         <TransitionGroup enter-active-class="transition duration-300 ease-out"
             enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100"
             leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100"
@@ -16,7 +17,12 @@
 
 <script setup lang="ts">
 import { useNotification, type NotificationType } from '../composables/useNotification'
-import { CheckCircledIcon, CrossCircledIcon, ExclamationTriangleIcon, InfoCircledIcon } from '@radix-icons/vue'
+import {
+    CheckCircledIcon,
+    CrossCircledIcon,
+    ExclamationTriangleIcon,
+    InfoCircledIcon
+} from '@radix-icons/vue'
 
 const { notifications } = useNotification()
 

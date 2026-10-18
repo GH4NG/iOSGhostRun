@@ -14,7 +14,11 @@ const notifications = ref<Notification[]>([])
 let notificationId = 0
 
 export function useNotification() {
-    const showNotification = (options: { type?: NotificationType; message: string; duration?: number }) => {
+    const showNotification = (options: {
+        type?: NotificationType
+        message: string
+        duration?: number
+    }) => {
         const id = `notification-${++notificationId}`
         const duration = options.duration ?? 3000
 
