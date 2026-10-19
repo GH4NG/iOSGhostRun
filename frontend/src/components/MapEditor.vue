@@ -182,6 +182,9 @@
             </Card>
         </div>
 
+        <div v-if="showManualOrigin" role="img" aria-label="手动定位起点，拖动地图选择" data-slot="manual-origin"
+            class="pointer-events-none absolute left-1/2 top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-cyan-500 shadow-lg" />
+
         <!-- 地图容器 -->
         <div ref="mapContainer" class="w-full h-full grayscale-[0.2] contrast-[1.1]"></div>
     </div>
@@ -224,6 +227,8 @@ const props = defineProps<{
     modelValue: RoutePoint[]
     currentPosition?: { lat: number; lon: number } | null
     disabled?: boolean
+    hideRoute?: boolean
+    manualActive?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -238,10 +243,13 @@ const searchQuery = ref('')
 const searchResults = ref<any[]>([])
 const isDrawingMode = ref(false)
 const mapReady = ref(false)
+const showManualOrigin = computed(
+    () => props.hideRoute && (!props.manualActive || !props.currentPosition) && mapReady.value
+)
 
 function getManualOrigin(): RoutePoint | null {
     if (!mapReady.value || isMapLoading.value) return null
-    if (props.currentPosition) return { ...props.currentPosition }
+    if (!props.hideRoute && props.currentPosition) return { ...props.currentPosition }
     const center = map?.getCenter()
     if (!center) return null
     const [lat, lon] = GCJ02ToWGS84(center.getLat(), center.getLng())
@@ -443,16 +451,39 @@ watch(
 
 watch(
     () => props.currentPosition,
-    pos => {
+    (pos, previous) => {
         updatePositionOverlay(pos)
+        // 仅跟随设备确认的位置变化；拖图选点不会发送定位请求。
+        if (
+            map &&
+            props.hideRoute &&
+            props.manualActive &&
+            pos &&
+            (!previous || pos.lat !== previous.lat || pos.lon !== previous.lon)
+        ) {
+            map.setCenter(toMapCoordinate(pos.lat, pos.lon), true)
+        }
     },
     { immediate: true }
+)
+
+watch(
+    () => props.hideRoute,
+    () => {
+        updateRouteDisplay()
+        updatePositionOverlay(props.currentPosition)
+    }
+)
+watch(
+    () => props.manualActive,
+    () => updatePositionOverlay(props.currentPosition)
 )
 
 function updateRouteDisplay() {
     if (!map || !window.AMap) return
     if (routeOverlays.length) map.remove(routeOverlays)
     routeOverlays = []
+    if (props.hideRoute) return
 
     const points = props.modelValue
     if (points.length === 0) return
@@ -497,7 +528,7 @@ function updatePositionOverlay(position: { lat: number; lon: number } | null | u
     if (!map || !window.AMap) return
     if (positionOverlay) map.remove(positionOverlay)
     positionOverlay = null
-    if (!position) return
+    if (!position || showManualOrigin.value) return
 
     positionOverlay = new window.AMap.CircleMarker({
         center: toMapCoordinate(position.lat, position.lon),
@@ -557,9 +588,12 @@ const { fitToRoute, centerOnPosition } = {
     }
 }
 
-watch(() => props.disabled, disabled => {
-    if (disabled) isDrawingMode.value = false
-})
+watch(
+    () => props.disabled,
+    disabled => {
+        if (disabled) isDrawingMode.value = false
+    }
+)
 
 defineExpose({
     fitToRoute,

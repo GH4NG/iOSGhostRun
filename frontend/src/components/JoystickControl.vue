@@ -45,7 +45,8 @@
                     aria-label="手动定位速度" />
             </div>
             <div class="border-t border-border/40 pt-3 text-[11px] leading-5 text-muted-foreground">
-                <p>从地图中心或当前定位出发。</p>
+                <p>拖动地图，让中央定位点选定起点。</p>
+                <p>开始后仅摇杆 / WASD 移动设备位置。</p>
                 <p>松手 / 失焦停步，关闭恢复真实定位。</p>
             </div>
             <Button class="h-10 w-full gap-2 text-sm font-semibold" :variant="active ? 'destructive' : 'default'"

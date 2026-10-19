@@ -158,7 +158,8 @@
                     <!-- 地图区域 -->
                     <div class="flex-1 relative min-h-0">
                         <MapEditor ref="mapEditor" v-model="editableRoutePoints" :current-position="currentPosition"
-                            :disabled="isSelectionLocked || isManualActive" />
+                            :disabled="isSelectionLocked || isManualActive" :hide-route="controlMode === 'manual'"
+                            :manual-active="isManualActive" />
                     </div>
 
                     <!-- 日志区域 -->
