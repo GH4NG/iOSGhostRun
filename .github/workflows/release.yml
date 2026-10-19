@@ -42,6 +42,9 @@ jobs:
                       name: macOS
 
         runs-on: ${{ matrix.os }}
+        env:
+            VITE_AMAP_JS_API_KEY: ${{ secrets.VITE_AMAP_JS_API_KEY }}
+            VITE_AMAP_SERVICE_HOST: ${{ secrets.VITE_AMAP_SERVICE_HOST }}
 
         steps:
             - name: Checkout
