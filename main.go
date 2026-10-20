@@ -21,6 +21,9 @@ var assets embed.FS
 //go:embed build/appicon.png
 var icon []byte
 
+//go:embed assets/wintun/LICENSE.txt
+var wintunLicense []byte
+
 func init() {
 	// 注册事件数据类型，让 Wails 生成对应的 TypeScript 绑定。
 	application.RegisterEvent[services.RunningStatus]("running:position")
@@ -46,6 +49,7 @@ func main() {
 	runningSvc := services.NewRunningService(locationSvc)
 	devicesSvc := services.NewDevicesService(runningSvc)
 	updateSvc := services.NewUpdateService()
+	settingsSvc := services.NewSettingsService(wintunLicense)
 
 	var window *application.WebviewWindow
 	var allowQuit atomic.Bool
@@ -86,6 +90,7 @@ func main() {
 			application.NewService(locationSvc),
 			application.NewService(runningSvc),
 			application.NewService(updateSvc),
+			application.NewService(settingsSvc),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

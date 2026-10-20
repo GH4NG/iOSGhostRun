@@ -89,7 +89,7 @@ func (d *DevicesService) selectDevice(udid string) error {
 	if version.Major() >= 17 {
 		// 再检测 Wintun
 		if !CheckWintunInstalled() {
-			err := fmt.Errorf("iOS 17+ 设备需要安装 Wintun")
+			err := fmt.Errorf("iOS 17+ 设备需要 Wintun，请打开右上角设置，一键下载安装或导入运行库")
 			Log.Error("DevicesService", err.Error())
 			return err
 		}
