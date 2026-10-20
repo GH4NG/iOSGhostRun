@@ -27,6 +27,12 @@
                                 {{ isMaximized ? '−' : '+' }}
                             </span>
                         </TitlebarButton>
+                        <ThemeToggle compact />
+                        <TitlebarButton
+                            class="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
+                            aria-label="设置" @click="showSettings = true">
+                            <GearIcon class="h-3.5 w-3.5" />
+                        </TitlebarButton>
                         <TitlebarButton
                             class="relative ml-2 h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
                             :aria-label="updateInfo?.available
@@ -53,6 +59,12 @@
                     </div>
 
                     <div class="flex items-center gap-1" style="--wails-draggable: no-drag">
+                        <ThemeToggle />
+                        <TitlebarButton
+                            class="w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
+                            aria-label="设置" @click="showSettings = true">
+                            <GearIcon class="h-4 w-4" />
+                        </TitlebarButton>
                         <TitlebarButton
                             class="relative w-9 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 flex items-center justify-center"
                             :aria-label="updateInfo?.available
@@ -119,6 +131,7 @@
                                 <div class="flex flex-col gap-3 px-4 pb-4">
                                     <DevicePanel v-model="selectedUdid" :disabled="isSelectionLocked || isManualActive"
                                         @busy-change="isDeviceBusy = $event" />
+                                    <MapProxyPanel @open-settings="showSettings = true" />
                                     <TabsRoot v-model="controlMode" class="min-w-0">
                                         <TabsList aria-label="定位控制模式"
                                             class="grid h-10 grid-cols-2 gap-1 rounded-xl border border-border/60 bg-secondary/30 p-1">
@@ -159,7 +172,8 @@
                     <div class="flex-1 relative min-h-0">
                         <MapEditor ref="mapEditor" v-model="editableRoutePoints" :current-position="currentPosition"
                             :disabled="isSelectionLocked || isManualActive" :hide-route="controlMode === 'manual'"
-                            :manual-active="isManualActive" />
+                            :manual-active="isManualActive" :config-revision="mapConfigRevision"
+                            @open-settings="showSettings = true" />
                     </div>
 
                     <!-- 日志区域 -->
@@ -182,6 +196,10 @@
                     </div>
                 </main>
             </div>
+
+            <SettingsDialog v-model:open="showSettings"
+                :locked="isSelectionLocked || isDeviceBusy || isManualActive || isInstallingUpdate"
+                @map-saved="mapConfigRevision++" />
 
             <!-- 应用更新 -->
             <div v-if="showUpdateDialog" class="fixed inset-0 z-[10000] flex items-center justify-center px-6"
@@ -337,7 +355,8 @@ import {
     Cross1Icon,
     UpdateIcon,
     ActivityLogIcon,
-    Crosshair2Icon
+    Crosshair2Icon,
+    GearIcon
 } from '@radix-icons/vue'
 import { TabsRoot, TabsList, TabsTrigger, TabsContent } from 'reka-ui'
 import { Browser, Events, System, Window } from '@wailsio/runtime'
@@ -349,6 +368,9 @@ import DevicePanel from './components/DevicePanel.vue'
 import RunningControl from './components/RunningControl.vue'
 import JoystickControl from './components/JoystickControl.vue'
 import Notification from './components/Notification.vue'
+import SettingsDialog from './components/SettingsDialog.vue'
+import MapProxyPanel from './components/MapProxyPanel.vue'
+import ThemeToggle from './components/ThemeToggle.vue'
 import { useRoutesStore, type RoutePoint } from './stores/routes'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -360,6 +382,8 @@ const selectedUdid = ref('')
 const routePoints = ref<RoutePoint[]>([])
 const currentPosition = ref<{ lat: number; lon: number } | null>(null)
 const isRunning = ref(false)
+const showSettings = ref(false)
+const mapConfigRevision = ref(0)
 const isManualActive = ref(false)
 const controlMode = ref('route')
 

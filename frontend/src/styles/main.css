@@ -36,6 +36,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+    color-scheme: light;
     --background: oklch(0.88 0 0);
     /* Muted slate/grey background */
     --foreground: oklch(0.2 0 0);
@@ -61,26 +62,27 @@
 }
 
 .dark {
-    --background: oklch(0.05 0 0);
-    /* Pure deep obsidian */
-    --foreground: oklch(0.8 0 0);
-    --card: oklch(0.08 0 0);
-    --card-foreground: oklch(0.8 0 0);
-    --popover: oklch(0.08 0 0);
-    --popover-foreground: oklch(0.8 0 0);
-    --primary: oklch(0.5 0.1 150);
-    --primary-foreground: oklch(0.05 0 0);
-    --secondary: oklch(0.12 0 0);
-    --secondary-foreground: oklch(0.8 0 0);
-    --muted: oklch(0.12 0 0);
-    --muted-foreground: oklch(0.5 0 0);
-    --accent: oklch(0.12 0 0);
-    --accent-foreground: oklch(0.8 0 0);
-    --destructive: oklch(0.3 0.1 25);
-    --destructive-foreground: oklch(0.8 0 0);
-    --border: oklch(0.15 0 0);
-    --input: oklch(0.15 0 0);
-    --ring: oklch(0.5 0.1 150);
+    color-scheme: dark;
+    /* 冷调深灰与地图陆地底色一致，面板逐层提亮；参考 docs/apple-inspired-dark.md。 */
+    --background: #242628;
+    --foreground: #e7ecf2;
+    --card: #2c2f33;
+    --card-foreground: #e7ecf2;
+    --popover: #32363c;
+    --popover-foreground: #e7ecf2;
+    --primary: #78b6ff;
+    --primary-foreground: #142334;
+    --secondary: #353a40;
+    --secondary-foreground: #e7ecf2;
+    --muted: #2d3238;
+    --muted-foreground: #a8b2bf;
+    --accent: #3a4551;
+    --accent-foreground: #e7ecf2;
+    --destructive: #ff8a80;
+    --destructive-foreground: #301b1b;
+    --border: #434b56;
+    --input: #434b56;
+    --ring: #78b6ff;
 }
 
 @theme inline {

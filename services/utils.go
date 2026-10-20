@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 
@@ -61,12 +60,8 @@ func CheckWintunInstalled() bool {
 		return true
 	}
 
-	systemDir := os.Getenv("SystemRoot")
-	wintunPath := filepath.Join(systemDir, "System32", "wintun.dll")
-	if _, err := os.Stat(wintunPath); err == nil {
-		return true
-	}
-	return false
+	_, err := findWintunDLL()
+	return err == nil
 }
 
 // DeviceInfo 设备信息
