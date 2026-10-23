@@ -11,7 +11,7 @@
                                     :class="[
                                         isSearchExpanded
                                             ? 'w-full h-10 px-1'
-                                            : 'h-10 w-10 justify-center ring-0 text-primary !bg-card/85'
+                                            : 'h-10 w-10 justify-center ring-0 text-primary bg-card/85!'
                                     ]">
                                     <Button size="icon" variant="ghost" aria-label="搜索地点"
                                         :aria-expanded="isSearchExpanded"
@@ -298,6 +298,7 @@ const currentLayerId = ref('amap-vec')
 
 type AMapRuntime = any
 
+const mapZooms: [number, number] = [3, 18]
 let map: AMapRuntime | null = null
 let mapClickHandler: ((event: AMapRuntime) => void) | null = null
 let baseLayers: Record<string, AMapRuntime> = {}
@@ -338,11 +339,12 @@ function loadAmapApi(credentials: AMapCredentials): Promise<AMapRuntime> {
 }
 
 function createBaseLayers(AMap: AMapRuntime) {
+    const options = { visible: true, zooms: mapZooms, dataZooms: mapZooms }
     baseLayers = {
-        'amap-vec': AMap.createDefaultLayer({ visible: true }),
+        'amap-vec': AMap.createDefaultLayer({ ...options }),
         'amap-img': [
-            new AMap.TileLayer.Satellite({ visible: true, opacity: 1, zIndex: 3 }),
-            new AMap.TileLayer.RoadNet({ visible: true, opacity: 1, zIndex: 4 })
+            new AMap.TileLayer.Satellite({ ...options, opacity: 1, zIndex: 3 }),
+            new AMap.TileLayer.RoadNet({ ...options, opacity: 1, zIndex: 4 })
         ]
     }
 }
@@ -381,9 +383,10 @@ async function initializeMap(credentials: AMapCredentials) {
         map = new AMap.Map(mapContainer.value, {
             center: toMapCoordinate(39.9, 116.4),
             zoom: 12,
-            zooms: [2, 18],
+            zooms: mapZooms,
             viewMode: '2D',
             resizeEnable: true,
+            keyboardEnable: !props.manualActive,
             showLabel: true,
             layers: [baseLayers['amap-vec']]
         })
@@ -451,19 +454,7 @@ watch(
 
 watch(
     () => props.currentPosition,
-    (pos, previous) => {
-        updatePositionOverlay(pos)
-        // 仅跟随设备确认的位置变化；拖图选点不会发送定位请求。
-        if (
-            map &&
-            props.hideRoute &&
-            props.manualActive &&
-            pos &&
-            (!previous || pos.lat !== previous.lat || pos.lon !== previous.lon)
-        ) {
-            map.setCenter(toMapCoordinate(pos.lat, pos.lon), true)
-        }
-    },
+    pos => updatePositionOverlay(pos),
     { immediate: true }
 )
 
@@ -476,7 +467,10 @@ watch(
 )
 watch(
     () => props.manualActive,
-    () => updatePositionOverlay(props.currentPosition)
+    active => {
+        map?.setStatus({ keyboardEnable: !active })
+        updatePositionOverlay(props.currentPosition)
+    }
 )
 
 function updateRouteDisplay() {
@@ -493,6 +487,7 @@ function updateRouteDisplay() {
         routeOverlays.push(
             new window.AMap.Polyline({
                 path: coords,
+                zooms: mapZooms,
                 strokeColor: '#10b981',
                 strokeWeight: 5,
                 strokeOpacity: 1,
@@ -510,6 +505,7 @@ function updateRouteDisplay() {
         routeOverlays.push(
             new window.AMap.CircleMarker({
                 center: coords[index],
+                zooms: mapZooms,
                 radius: isStart || isEnd ? 7 : 5,
                 fillColor: isStart ? '#10b981' : isEnd ? '#ef4444' : '#3b82f6',
                 fillOpacity: 1,
@@ -526,12 +522,21 @@ function updateRouteDisplay() {
 
 function updatePositionOverlay(position: { lat: number; lon: number } | null | undefined) {
     if (!map || !window.AMap) return
-    if (positionOverlay) map.remove(positionOverlay)
-    positionOverlay = null
-    if (!position || showManualOrigin.value) return
+    if (!position || showManualOrigin.value) {
+        if (positionOverlay) map.remove(positionOverlay)
+        positionOverlay = null
+        return
+    }
+
+    const center = toMapCoordinate(position.lat, position.lon)
+    if (positionOverlay) {
+        positionOverlay.setCenter(center)
+        return
+    }
 
     positionOverlay = new window.AMap.CircleMarker({
-        center: toMapCoordinate(position.lat, position.lon),
+        center,
+        zooms: mapZooms,
         radius: 10,
         fillColor: '#06b6d4',
         fillOpacity: 1,
@@ -580,7 +585,7 @@ function selectSearchResult(result: any) {
 const { fitToRoute, centerOnPosition } = {
     fitToRoute: () => {
         if (!map || routeOverlays.length === 0) return
-        map.setFitView(routeOverlays, false, [50, 50, 50, 50], 18)
+        map.setFitView(routeOverlays, false, [50, 50, 50, 50], mapZooms[1])
     },
     centerOnPosition: (lat: number, lon: number) => {
         if (!map) return

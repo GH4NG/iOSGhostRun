@@ -222,6 +222,7 @@ function onKeyDown(event: KeyboardEvent) {
     const key = event.key.toLowerCase()
     if (!controlKeys.has(key)) return
     event.preventDefault()
+    event.stopPropagation()
     keys.value = new Set(keys.value).add(key)
     if (!event.repeat) void sendInput()
 }
@@ -229,6 +230,7 @@ function onKeyUp(event: KeyboardEvent) {
     const key = event.key.toLowerCase()
     if (!keys.value.has(key)) return
     event.preventDefault()
+    event.stopPropagation()
     const next = new Set(keys.value)
     next.delete(key)
     keys.value = next
@@ -291,8 +293,9 @@ watch(
     }
 )
 onMounted(() => {
-    window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
+
+    window.addEventListener('keydown', onKeyDown, true)
+    window.addEventListener('keyup', onKeyUp, true)
     window.addEventListener('blur', halt)
     document.addEventListener('focusin', onFocusIn)
     document.addEventListener('visibilitychange', onVisibilityChange)
@@ -309,8 +312,8 @@ onUnmounted(() => {
     disposed = true
     clearTimer()
     clearInput()
-    window.removeEventListener('keydown', onKeyDown)
-    window.removeEventListener('keyup', onKeyUp)
+    window.removeEventListener('keydown', onKeyDown, true)
+    window.removeEventListener('keyup', onKeyUp, true)
     window.removeEventListener('blur', halt)
     document.removeEventListener('focusin', onFocusIn)
     document.removeEventListener('visibilitychange', onVisibilityChange)
