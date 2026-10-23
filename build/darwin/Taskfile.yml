@@ -10,11 +10,11 @@ tasks:
             - task: common:go:mod:tidy
             - task: common:build:frontend
               vars:
+                  PRODUCTION: '{{.PRODUCTION}}'
                   BUILD_FLAGS:
                       ref: .BUILD_FLAGS
                   DEV:
                       ref: .DEV
-            - task: common:generate:icons
         cmds:
             - go build {{.BUILD_FLAGS}} -o {{.OUTPUT}}
         vars:
@@ -28,32 +28,45 @@ tasks:
             GOARCH: '{{.ARCH}}'
 
     package:
-        summary: Packages the application into a universal `.app` bundle
+        summary: Packages separate AMD64 and ARM64 macOS app bundles
         cmds:
-            - task: build
+            - task: package:arch
               vars:
                   ARCH: amd64
-            - task: build
+            - task: package:arch
               vars:
                   ARCH: arm64
-            - lipo -create "{{.BIN_DIR}}/{{.APP_NAME}}-amd64" "{{.BIN_DIR}}/{{.APP_NAME}}-arm64" -output "{{.BIN_DIR}}/{{.APP_NAME}}-universal"
+
+    package:arch:
+        internal: true
+        cmds:
+            - task: build
+              vars:
+                  ARCH: '{{.ARCH}}'
             - task: create:app:bundle
-            - cd {{.BIN_DIR}} && zip -r {{.APP_NAME}}-darwin-universal.zip {{.APP_NAME}}.app
+              vars:
+                  ARCH: '{{.ARCH}}'
+            - ditto -c -k --norsrc --keepParent "{{.BIN_DIR}}/darwin-{{.ARCH}}/{{.APP_NAME}}.app" "{{.BIN_DIR}}/{{.APP_NAME}}-darwin-{{.ARCH}}.zip"
 
     create:app:bundle:
-        summary: Creates an `.app` bundle for universal binary
+        summary: Creates an `.app` bundle for the selected architecture
         cmds:
-            - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS"
-            - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources"
-            - cp build/darwin/icons.icns "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources"
-            - cp "{{.BIN_DIR}}/{{.APP_NAME}}-universal" "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS/{{.APP_NAME}}"
-            - cp build/darwin/Info.plist "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents"
+            - mkdir -p "{{.BUNDLE_DIR}}/Contents/MacOS"
+            - mkdir -p "{{.BUNDLE_DIR}}/Contents/Resources"
+            - cp build/darwin/icons.icns "{{.BUNDLE_DIR}}/Contents/Resources"
+            - cp build/darwin/Assets.car "{{.BUNDLE_DIR}}/Contents/Resources"
+            - cp "{{.BIN_DIR}}/{{.APP_NAME}}-{{.ARCH}}" "{{.BUNDLE_DIR}}/Contents/MacOS/{{.APP_NAME}}"
+            - cp build/darwin/Info.plist "{{.BUNDLE_DIR}}/Contents"
+        vars:
+            ARCH: '{{.ARCH | default ARCH}}'
+            BUNDLE_DIR: '{{.BIN_DIR}}/darwin-{{.ARCH}}/{{.APP_NAME}}.app'
 
     run:
         cmds:
             - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/MacOS"
             - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/Resources"
             - cp build/darwin/icons.icns "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/Resources"
+            - cp build/darwin/Assets.car "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/Resources"
             - cp "{{.BIN_DIR}}/{{.APP_NAME}}-{{.ARCH | default ARCH}}" "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/MacOS/{{.APP_NAME}}"
             - cp "build/darwin/Info.dev.plist" "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/Info.plist"
             - '{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/MacOS/{{.APP_NAME}}'

@@ -15,7 +15,6 @@ tasks:
                       ref: .BUILD_FLAGS
                   DEV:
                       ref: .DEV
-            - task: common:generate:icons
         cmds:
             - task: generate:syso
               vars:

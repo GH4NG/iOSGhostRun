@@ -12,6 +12,7 @@ info:
     copyright: '© 2026 iOSGhostRun' # Copyright text
     comments: '跨平台  iOS 虚拟跑步应用' # Comments
     version: '0.1.0' # The application version
+    cfBundleIconName: 'appicon' # Icon Composer name in Assets.car
 
 # Dev mode configuration
 dev_mode:

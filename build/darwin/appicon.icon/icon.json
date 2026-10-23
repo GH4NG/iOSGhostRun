@@ -1,0 +1,57 @@
+{
+  "fill": "none",
+  "groups": [
+    {
+      "name": "Artwork · 幽灵、文字与地图",
+      "layers": [
+        {
+          "name": "Map · 地图与路线",
+          "image-name": "route-artwork.png",
+          "glass": false,
+          "position": {
+            "scale": 0.75,
+            "translation-in-points": [
+              0,
+              37
+            ]
+          }
+        },
+        {
+          "name": "Ghost · 无脚幽灵",
+          "image-name": "ghost.png",
+          "glass": true,
+          "position": {
+            "scale": 0.74,
+            "translation-in-points": [
+              -10,
+              -112
+            ]
+          }
+        },
+        {
+          "name": "Wordmark · 应用名称",
+          "image-name": "wordmark.svg",
+          "glass": false,
+          "position": {
+            "scale": 1,
+            "translation-in-points": [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "lighting": "individual",
+      "specular": true,
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.2
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}

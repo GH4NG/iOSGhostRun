@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=iOSGhostRun
+Comment=iOS virtual location and route simulation
+Comment[zh_CN]=iOS 虚拟定位与路线跑步应用
+Exec=iOSGhostRun
+Terminal=false
+Type=Application
+Icon=com.iosghostrun.app
+Categories=Utility;
+Keywords=iOS;GPS;Location;Route;
+Keywords[zh_CN]=iOS;GPS;定位;路线;跑步;
+StartupWMClass=com.iosghostrun.app

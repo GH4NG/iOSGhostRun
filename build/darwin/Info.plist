@@ -8,6 +8,8 @@
 		<string>跨平台  iOS 虚拟跑步应用</string>
 		<key>CFBundleIconFile</key>
 		<string>icons</string>
+		<key>CFBundleIconName</key>
+		<string>appicon</string>
 		<key>CFBundleIdentifier</key>
 		<string>com.iosghostrun.app</string>
 		<key>CFBundleName</key>
