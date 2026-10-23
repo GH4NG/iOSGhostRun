@@ -49,6 +49,18 @@ func MountImage(udid string) error {
 
 // UnmountImage 卸载镜像
 func UnmountImage(udid string) error {
+	device, ver, err := GetDeviceAndVersion(udid)
+	if err != nil {
+		return err
+	}
+
+	if ver.Major() >= 17 {
+		if err := unmountPersonalizedImage(device, ver); err != nil {
+			return fmt.Errorf("卸载 personalized 开发者镜像失败: %w", err)
+		}
+		return nil
+	}
+
 	return unmountDeveloperImage(udid)
 }
 
@@ -64,6 +76,19 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 		return fmt.Errorf("解析系统版本失败: %w", err)
 	}
 
+	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
+	if err != nil {
+		return fmt.Errorf("获取开发者镜像失败: %w", err)
+	}
+
+	// 同一挂载点只能存在一份镜像。Xcode 的 CoreDevice 会在设备接入时自动挂载
+	// 个性化镜像并占用 /System/Developer，此时直接挂载会被设备拒绝
+	// （ImageMountFailed: ... is already mounted at /System/Developer）。
+	// 先尝试卸载旧镜像；个性化镜像在多数设备上无法卸载，卸载失败时退回复用现有镜像。
+	if err := unmountPersonalizedImage(device, ver); err != nil {
+		Log.Warn("ImageService", "卸载原有 personalized 镜像失败: "+err.Error())
+	}
+
 	pm, err := imagemounter.NewPersonalizedDeveloperDiskImageMounter(device, ver)
 	if err != nil {
 		return fmt.Errorf("创建 personalized mounter 失败: %w", err)
@@ -71,19 +96,44 @@ func mountPersonalizedImage(device ios.DeviceEntry) error {
 	defer pm.Close()
 
 	if sigs, err := pm.ListImages(); err == nil && len(sigs) > 0 {
-		Log.Info("ImageService", "开发者镜像已挂载 (personalized)，跳过")
+		Log.Warn("ImageService", "镜像仍处于挂载状态，跳过重复挂载")
 		return nil
-	}
-	imagePath, err := imagemounter.DownloadImageFor(device, ResolveAppDir("devimages"))
-	if err != nil {
-		return fmt.Errorf("获取开发者镜像失败: %w", err)
 	}
 
 	if err := pm.MountImage(imagePath); err != nil {
+		if isImageAlreadyMounted(err) {
+			Log.Warn("ImageService", "设备上已存在挂载的 personalized 镜像，直接复用")
+			return nil
+		}
 		return fmt.Errorf("挂载 personalized 镜像失败: %w", err)
 	}
 
 	Log.Info("ImageService", "personalized 开发者镜像挂载成功")
+	return nil
+}
+
+// isImageAlreadyMounted 判断设备是否已经挂载了同类型镜像。
+// 个性化开发者镜像一旦挂上，卸载命令通常无效（只能重启设备清除），
+// 此时再次挂载会收到：
+// A disk image of type Personalized/DeveloperDiskImage is already mounted at /System/Developer.
+// 这种情况下现有镜像已可满足调试/定位需求，按挂载成功处理。
+func isImageAlreadyMounted(err error) bool {
+	return strings.Contains(err.Error(), "is already mounted")
+}
+
+// unmountPersonalizedImage 卸载个性化开发者镜像 (iOS >= 17)
+func unmountPersonalizedImage(device ios.DeviceEntry, ver *semver.Version) error {
+	pm, err := imagemounter.NewPersonalizedDeveloperDiskImageMounter(device, ver)
+	if err != nil {
+		return fmt.Errorf("创建 personalized mounter 失败: %w", err)
+	}
+	defer pm.Close()
+
+	if err := pm.UnmountImage(); err != nil {
+		return err
+	}
+
+	Log.Info("ImageService", "已卸载原有的 personalized 开发者镜像")
 	return nil
 }
 
