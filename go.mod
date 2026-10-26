@@ -4,7 +4,7 @@ go 1.26.3
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/danielpaulus/go-ios v1.3.2
+	github.com/danielpaulus/go-ios v1.3.3-0.20261009072143-ca2c56d2c294
 	github.com/phlipse/go-pac v0.1.1
 	github.com/wailsapp/wails/v3 v3.0.0-beta.32
 )
