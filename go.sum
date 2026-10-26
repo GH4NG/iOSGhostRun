@@ -9,8 +9,8 @@ github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QH
 github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=
 github.com/coder/websocket v1.8.15/go.mod h1:NX3SzP+inril6yawo5CQXx8+fk145lPDC6pumgx0mVg=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
-github.com/danielpaulus/go-ios v1.3.2 h1:UhELDTpghVHOJcSa6tldEggQkMK9zhP+sMQ/CDE8ITE=
-github.com/danielpaulus/go-ios v1.3.2/go.mod h1:y4uX8IYV8TetcSVqJS7IkN7zpq4UtX2vDt48mD2+dKk=
+github.com/danielpaulus/go-ios v1.3.3-0.20261009072143-ca2c56d2c294 h1:gyGZt7DSH9k7q1b0cwJCZB5gVhH1sU4/SAM47iZ+eTg=
+github.com/danielpaulus/go-ios v1.3.3-0.20261009072143-ca2c56d2c294/go.mod h1:A3Oz+qKOuQs0RorxTPTxojxO2cVpdUEfiP3hfvd9IcQ=
 github.com/dlclark/regexp2/v2 v2.9.1 h1:q6bZW/NN9VodqMjYXpuic2lZxdHPfFTzGS+MJxIJmKQ=
 github.com/dlclark/regexp2/v2 v2.9.1/go.mod h1:avUrQvPaLz2DrFNHJF0taWAFFX2C1GMSSoeiqFjcBmU=
 github.com/dop251/goja v0.0.0-20261018113103-d42f16bb6161 h1:D9Bbwh0iJ8T/hHCDebeQzADTqaRRlEjLM/vt0Fjsgvw=
